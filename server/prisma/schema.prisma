@@ -48,6 +48,7 @@ model User {
   assignedTickets Ticket[]  @relation("AssignedTickets")
   comments        Comment[]
   activities      Activity[]
+  notifications   Notification[]
 }
 
 model Ticket {
@@ -107,4 +108,16 @@ model Activity {
 
   ticketId  Int?
   ticket    Ticket?  @relation(fields: [ticketId], references: [id])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  type      String
+  link      String?
+  createdAt DateTime @default(now())
 }

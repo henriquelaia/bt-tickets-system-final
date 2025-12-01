@@ -11,6 +11,7 @@ import dashboardRoutes from './routes/dashboardRoutes';
 
 import categoryRoutes from './routes/categoryRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 
 import { createServer } from 'http';
 import { initSocket } from './utils/socket';
@@ -31,7 +32,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/categories', categoryRoutes);
+
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 
 app.get('/', (req, res) => {

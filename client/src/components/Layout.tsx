@@ -6,6 +6,7 @@ import clsx from 'clsx';
 
 import { useTheme } from '../context/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 
 export default function Layout() {
     const { user, logout } = useAuth();
@@ -23,6 +24,7 @@ export default function Layout() {
         { label: 'Os Meus Tickets', path: '/my-tickets', icon: Ticket },
         { label: 'Atribuídos a Mim', path: '/assigned-tickets', icon: Ticket },
         { label: 'Todos os Tickets', path: '/tickets', icon: Ticket },
+        { label: 'Quadro Kanban', path: '/kanban', icon: LayoutDashboard },
         { label: 'Novo Ticket', path: '/new-ticket', icon: PlusCircle },
         { label: 'Perfil', path: '/profile', icon: UserIcon },
     ];
@@ -125,13 +127,16 @@ export default function Layout() {
                             {navItems.find(item => item.path === location.pathname)?.label || 'Dashboard'}
                         </h2>
                         <div className="flex items-center space-x-4">
-                            <button
-                                onClick={toggleTheme}
-                                className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
-                                title="Toggle Theme"
-                            >
-                                {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-                            </button>
+                            <div className="flex items-center space-x-2">
+                                <NotificationBell />
+                                <button
+                                    onClick={toggleTheme}
+                                    className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors"
+                                    title="Toggle Theme"
+                                >
+                                    {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                                </button>
+                            </div>
                             <div className="flex items-center space-x-3">
                                 <div className="text-right hidden sm:block">
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">{user?.name}</p>

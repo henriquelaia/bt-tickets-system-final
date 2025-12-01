@@ -12,6 +12,7 @@ import UserList from './pages/admin/UserList';
 import CategoryList from './pages/admin/CategoryList';
 import Profile from './pages/Profile';
 import Analytics from './pages/Analytics';
+import KanbanBoard from './pages/KanbanBoard';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
@@ -35,6 +36,7 @@ function AppRoutes() {
         <Route index element={<Dashboard />} />
         <Route path="my-tickets" element={<TicketList filter="created" />} />
         <Route path="assigned-tickets" element={<TicketList filter="assigned" />} />
+        <Route path="kanban" element={<KanbanBoard />} />
         <Route path="new-ticket" element={<NewTicket />} />
         <Route path="tickets/:id" element={<TicketDetail />} />
         <Route path="admin/users" element={<UserList />} />
@@ -48,6 +50,7 @@ function AppRoutes() {
 }
 
 import { SocketProvider } from './context/SocketContext';
+import { NotificationProvider } from './context/NotificationContext';
 
 // ...
 
@@ -59,8 +62,10 @@ export default function App() {
       <AuthProvider>
         <SocketProvider>
           <ThemeProvider>
-            <Toaster position="top-right" />
-            <AppRoutes />
+            <NotificationProvider>
+              <Toaster position="top-right" />
+              <AppRoutes />
+            </NotificationProvider>
           </ThemeProvider>
         </SocketProvider>
       </AuthProvider>

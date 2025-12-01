@@ -1,10 +1,10 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { login, getMe } from '../controllers/authController';
 import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
 router.post('/login', login);
-router.get('/me', authenticateToken, getMe);
+router.get('/me', authenticateToken, (getMe as unknown) as express.RequestHandler);
 
 export default router;

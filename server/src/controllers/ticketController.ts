@@ -4,6 +4,7 @@ import { Status, Priority } from '@prisma/client';
 import { sendTicketCreatedEmail, sendTicketAssignedEmail } from '../utils/emailService';
 import { getIO } from '../utils/socket';
 import { logActivity } from '../utils/activityLogger';
+import { createNotification } from '../utils/notification';
 
 import { AuthenticatedRequest } from '../types';
 
@@ -39,6 +40,13 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
         // Send email to assignee if assigned immediately
         if (ticket.assignee && ticket.assignee.email) {
             sendTicketAssignedEmail(ticket.assignee.email, ticket.id, ticket.title).catch(console.error);
+            createNotification(
+                ticket.assignee.id,
+                'Ticket Atribuído',
+                `Foi-lhe atribuído o ticket #${ticket.id}: ${ticket.title}`,
+                'TICKET_ASSIGNED',
+                `/tickets/${ticket.id}`
+            );
         }
 
         res.status(201).json(ticket);
@@ -151,6 +159,28 @@ export const addComment = async (req: AuthenticatedRequest, res: Response) => {
         // Emit socket event
         getIO().emit('comment:added', { ticketId: parseInt(id), comment });
 
+        // Notify ticket creator if not the commenter
+        const ticket = await prisma.ticket.findUnique({ where: { id: parseInt(id) } });
+        if (ticket && ticket.creatorId !== userId) {
+            createNotification(
+                ticket.creatorId,
+                'Novo Comentário',
+                `Novo comentário no ticket #${id}`,
+                'COMMENT_ADDED',
+                `/tickets/${id}`
+            );
+        }
+        // Notify assignee if not the commenter and not the creator (to avoid double notify)
+        if (ticket && ticket.assigneeId && ticket.assigneeId !== userId && ticket.assigneeId !== ticket.creatorId) {
+            createNotification(
+                ticket.assigneeId,
+                'Novo Comentário',
+                `Novo comentário no ticket #${id}`,
+                'COMMENT_ADDED',
+                `/tickets/${id}`
+            );
+        }
+
         res.status(201).json(comment);
     } catch (error) {
         res.status(500).json({ message: 'Erro ao adicionar comentário' });
@@ -177,6 +207,13 @@ export const updateTicket = async (req: AuthenticatedRequest, res: Response) => 
         if (assigneeId && ticket.assignee && ticket.assignee.email) {
             // Ideally check if assigneeId actually changed, but for now send on any update with assignee
             sendTicketAssignedEmail(ticket.assignee.email, ticket.id, ticket.title).catch(console.error);
+            createNotification(
+                ticket.assignee.id,
+                'Ticket Atribuído',
+                `Foi-lhe atribuído o ticket #${ticket.id}: ${ticket.title}`,
+                'TICKET_ASSIGNED',
+                `/tickets/${ticket.id}`
+            );
         }
 
         // Emit socket event
