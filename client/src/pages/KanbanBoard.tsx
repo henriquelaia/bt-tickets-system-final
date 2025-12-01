@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
+import { useState, useEffect } from 'react';
+import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import api from '../lib/api';
-import { Ticket } from '../types';
+import type { Ticket } from '../types';
 import { STATUS_LABELS, PRIORITY_LABELS } from '../utils/translations';
 import clsx from 'clsx';
 import { Link } from 'react-router-dom';
