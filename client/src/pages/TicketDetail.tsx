@@ -44,6 +44,7 @@ export default function TicketDetail() {
     const [newComment, setNewComment] = useState('');
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [showCloseModal, setShowCloseModal] = useState(false);
     const [closeComment, setCloseComment] = useState('');
     const [closeFile, setCloseFile] = useState<File | null>(null);
