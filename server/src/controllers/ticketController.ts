@@ -227,6 +227,8 @@ export const updateTicket = async (req: AuthenticatedRequest, res: Response) => 
 
 export const uploadAttachment = async (req: Request, res: Response) => {
     const { id } = req.params;
+    const { commentId } = req.body;
+
     if (!req.file) {
         return res.status(400).json({ message: 'Nenhum ficheiro carregado' });
     }
@@ -236,7 +238,8 @@ export const uploadAttachment = async (req: Request, res: Response) => {
             data: {
                 url: `/uploads/${req.file.filename}`,
                 name: req.file.originalname,
-                ticketId: parseInt(id)
+                ticketId: parseInt(id),
+                commentId: commentId ? parseInt(commentId) : null
             }
         });
         res.status(201).json(attachment);
