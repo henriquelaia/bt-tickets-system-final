@@ -12,6 +12,7 @@ export default function CategoryList() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [newCategory, setNewCategory] = useState('');
     const [loading, setLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         fetchCategories();
@@ -26,15 +27,22 @@ export default function CategoryList() {
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newCategory.trim()) return;
+        if (!newCategory.trim() || isSubmitting) return;
 
+        setIsSubmitting(true);
         try {
             await api.post('/categories', { name: newCategory });
             setNewCategory('');
             fetchCategories();
             toast.success('Categoria criada');
-        } catch (error) {
-            toast.error('Erro ao criar categoria');
+        } catch (error: any) {
+            if (error.response?.status === 409) {
+                toast.error('Uma categoria com este nome já existe.');
+            } else {
+                toast.error('Erro ao criar categoria');
+            }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -66,14 +74,28 @@ export default function CategoryList() {
                         value={newCategory}
                         onChange={(e) => setNewCategory(e.target.value)}
                         placeholder="Nome da Nova Categoria"
-                        className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        disabled={isSubmitting}
+                        className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
                     />
                     <button
                         type="submit"
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                        disabled={isSubmitting}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center disabled:bg-blue-400 disabled:cursor-not-allowed"
                     >
-                        <Plus className="w-5 h-5 mr-2" />
-                        Adicionar Categoria
+                        {isSubmitting ? (
+                            <span className="flex items-center">
+                                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                A criar...
+                            </span>
+                        ) : (
+                            <>
+                                <Plus className="w-5 h-5 mr-2" />
+                                Adicionar Categoria
+                            </>
+                        )}
                     </button>
                 </form>
             </div>
