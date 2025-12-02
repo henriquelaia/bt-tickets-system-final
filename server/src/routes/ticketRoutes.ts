@@ -1,3 +1,4 @@
+import express, { Router } from 'express';
 import { createTicket, getTickets, getTicket, addComment, updateTicket, uploadAttachment, deleteTicket, cleanupTickets } from '../controllers/ticketController';
 import upload from '../middleware/upload';
 import { authenticateToken } from '../middleware/auth';
