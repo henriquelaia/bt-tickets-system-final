@@ -50,10 +50,8 @@ export default function TicketDetail() {
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [showCloseModal, setShowCloseModal] = useState(false);
-    const [closeComment, setCloseComment] = useState('');
-    const [closeFile, setCloseFile] = useState<File | null>(null);
     const [targetStatus, setTargetStatus] = useState('');
+    const [error, setError] = useState(false);
 
     // Edit State
     const [isEditing, setIsEditing] = useState(false);
@@ -65,6 +63,9 @@ export default function TicketDetail() {
         categoryId: ''
     });
     const [categories, setCategories] = useState<Category[]>([]);
+    const [showCloseModal, setShowCloseModal] = useState(false);
+    const [closeComment, setCloseComment] = useState('');
+    const [closeFile, setCloseFile] = useState<File | null>(null);
 
     useEffect(() => {
         if (ticket) {
@@ -92,7 +93,6 @@ export default function TicketDetail() {
                 if (data.ticketId === Number(id)) {
                     setTicket(prev => {
                         if (!prev) return null;
-                        // Avoid duplicates if the user just added it themselves
                         if (prev.comments.some(c => c.id === data.comment.id)) return prev;
                         return { ...prev, comments: [...prev.comments, data.comment] };
                     });
@@ -116,10 +116,11 @@ export default function TicketDetail() {
         try {
             const res = await api.get(`/tickets/${id}`);
             setTicket(res.data);
+            setError(false);
         } catch (err) {
             console.error(err);
+            setError(true);
             toast.error('Erro ao carregar ticket');
-            navigate('/');
         } finally {
             setLoading(false);
         }
@@ -183,7 +184,7 @@ export default function TicketDetail() {
         try {
             const res = await api.put(`/tickets/${id}`, {
                 ...editForm,
-                categoryId: parseInt(editForm.categoryId)
+                categoryId: editForm.categoryId ? parseInt(editForm.categoryId) : undefined
             });
             setTicket(res.data);
             setIsEditing(false);
@@ -225,6 +226,41 @@ export default function TicketDetail() {
     };
 
     if (loading) return <div className="flex justify-center items-center h-full"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
+
+    if (error) return (
+        <div className="max-w-4xl mx-auto p-6 text-center">
+            <div className="mb-6 text-red-600">
+                <h2 className="text-2xl font-bold mb-2">Erro ao carregar ticket</h2>
+                <p>Não foi possível carregar os detalhes deste ticket. Ele pode estar corrompido ou ter sido apagado.</p>
+            </div>
+            <div className="flex justify-center space-x-4">
+                <button
+                    onClick={() => navigate('/tickets')}
+                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
+                >
+                    Voltar para a lista
+                </button>
+                {(user?.role === 'ADMIN' || (ticket && user?.id === ticket.creator?.id)) && (
+                    <button
+                        onClick={async () => {
+                            if (!window.confirm('Tem a certeza que deseja apagar este ticket? Esta ação é irreversível.')) return;
+                            try {
+                                await api.delete(`/tickets/${id}`);
+                                toast.success('Ticket apagado com sucesso');
+                                navigate('/tickets');
+                            } catch (error) {
+                                toast.error('Erro ao apagar ticket');
+                            }
+                        }}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                        Apagar Ticket Corrompido
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+
     if (!ticket) return <div className="text-center text-gray-500 mt-10">Ticket não encontrado</div>;
 
     return (
