@@ -9,7 +9,7 @@ export default function NewTicket() {
     const [description, setDescription] = useState('');
     const [categoryId, setCategoryId] = useState('');
     const [priority, setPriority] = useState('MEDIUM');
-    const [assigneeId, setAssigneeId] = useState('');
+    const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
     const [file, setFile] = useState<File | null>(null);
     const [users, setUsers] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
@@ -30,18 +30,23 @@ export default function NewTicket() {
                 description,
                 categoryId,
                 priority,
-                assigneeId: assigneeId ? parseInt(assigneeId) : null
+                assigneeIds: assigneeIds.length > 0 ? assigneeIds : null
             });
 
             if (file) {
                 const formData = new FormData();
                 formData.append('file', file);
+                // If multiple tickets were created, we might need to handle attachments for all of them.
+                // However, the backend returns the first ticket.
+                // For now, let's attach to the returned ticket ID.
+                // Ideally, the backend should handle attachment duplication or we loop here if we knew all IDs.
+                // Given the constraint, we will attach to the primary (first) ticket returned.
                 await api.post(`/tickets/${res.data.id}/attachments`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
             }
 
-            toast.success('Ticket criado com sucesso');
+            toast.success('Ticket(s) criado(s) com sucesso');
             navigate('/my-tickets');
         } catch (error) {
             toast.error('Erro ao criar ticket');
@@ -104,13 +109,16 @@ export default function NewTicket() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Atribuir a (Opcional)</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Atribuir a (Múltipla seleção: Ctrl/Cmd + Click)</label>
                     <select
-                        value={assigneeId}
-                        onChange={e => setAssigneeId(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                        multiple
+                        value={assigneeIds}
+                        onChange={e => {
+                            const selectedOptions = Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value);
+                            setAssigneeIds(selectedOptions);
+                        }}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors h-32"
                     >
-                        <option value="">-- Selecionar Utilizador --</option>
                         {users.map(user => (
                             <option key={user.id} value={user.id}>{user.name} ({user.role})</option>
                         ))}

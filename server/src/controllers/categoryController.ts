@@ -17,7 +17,11 @@ export const createCategory = async (req: Request, res: Response) => {
             data: { name }
         });
         res.status(201).json(category);
-    } catch (error) {
+    } catch (error: any) {
+        console.error('Error creating category:', error);
+        if (error.code === 'P2002') {
+            return res.status(409).json({ message: 'Uma categoria com este nome já existe.' });
+        }
         res.status(500).json({ message: 'Erro ao criar categoria' });
     }
 };

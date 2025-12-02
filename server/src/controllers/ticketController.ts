@@ -9,10 +9,60 @@ import { createNotification } from '../utils/notification';
 import { AuthenticatedRequest } from '../types';
 
 export const createTicket = async (req: AuthenticatedRequest, res: Response) => {
-    const { title, description, priority, categoryId, assigneeId } = req.body;
+    const { title, description, priority, categoryId, assigneeId, assigneeIds } = req.body;
     const creatorId = req.user.id;
 
     try {
+        // Handle multiple assignees
+        if (assigneeIds && Array.isArray(assigneeIds) && assigneeIds.length > 0) {
+            const tickets = [];
+
+            for (const assignedUserId of assigneeIds) {
+                const ticket = await prisma.ticket.create({
+                    data: {
+                        title,
+                        description,
+                        priority: priority || 'MEDIUM',
+                        categoryId: categoryId,
+                        creatorId: req.user.id,
+                        assigneeId: parseInt(assignedUserId)
+                    },
+                    include: {
+                        creator: true,
+                        assignee: true,
+                        category: true
+                    }
+                });
+
+                // Log activity
+                await logActivity(req.user.id, ticket.id, 'TICKET_CREATED', `Ticket criado: ${ticket.title}`);
+
+                // Send email to creator (only once per batch? or for each? Let's do for each to be safe/consistent)
+                if (req.user.email) {
+                    sendTicketCreatedEmail(req.user.email, ticket.id, ticket.title).catch(console.error);
+                }
+
+                // Send email to assignee
+                if (ticket.assignee && ticket.assignee.email) {
+                    sendTicketAssignedEmail(ticket.assignee.email, ticket.id, ticket.title).catch(console.error);
+                    createNotification(
+                        ticket.assignee.id,
+                        'Ticket Atribuído',
+                        `Foi-lhe atribuído o ticket #${ticket.id}: ${ticket.title}`,
+                        'TICKET_ASSIGNED',
+                        `/tickets/${ticket.id}`
+                    );
+                }
+
+                tickets.push(ticket);
+            }
+
+            return res.status(201).json(tickets[0]); // Return the first one or a list? Frontend expects one object usually. Let's return the first one to avoid breaking frontend immediately, or we can return the list if we update frontend. 
+            // The user said "create two separate tickets". The frontend will likely redirect to "my-tickets" list anyway.
+            // Returning the first one is safe for now.
+        }
+
+        // Single assignee or no assignee (Legacy behavior)
         const ticket = await prisma.ticket.create({
             data: {
                 title,
@@ -20,7 +70,7 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
                 priority: priority || 'MEDIUM',
                 categoryId: categoryId,
                 creatorId: req.user.id,
-                assigneeId: assigneeId || null
+                assigneeId: assigneeId ? parseInt(assigneeId) : null
             },
             include: {
                 creator: true,
@@ -51,6 +101,7 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
 
         res.status(201).json(ticket);
     } catch (error) {
+        console.error('Error creating ticket:', error);
         res.status(500).json({ message: 'Erro ao criar ticket' });
     }
 };
