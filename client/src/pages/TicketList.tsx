@@ -166,13 +166,13 @@ export default function TicketList({ filter }: TicketListProps) {
                                         {PRIORITY_LABELS[ticket.priority] || ticket.priority}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{ticket.category.name}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{ticket.category?.name || 'Sem Categoria'}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                     <div className="flex items-center">
                                         <div className="h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 mr-2">
-                                            {(filter === 'assigned' ? ticket.creator.name : (ticket.assignee?.name || '?')).charAt(0)}
+                                            {(filter === 'assigned' ? (ticket.creator?.name || '?') : (ticket.assignee?.name || '?')).charAt(0)}
                                         </div>
-                                        {filter === 'assigned' ? ticket.creator.name : (ticket.assignee?.name || 'Não atribuído')}
+                                        {filter === 'assigned' ? (ticket.creator?.name || 'Desconhecido') : (ticket.assignee?.name || 'Não atribuído')}
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">

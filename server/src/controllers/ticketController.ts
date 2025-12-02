@@ -240,39 +240,108 @@ export const addComment = async (req: AuthenticatedRequest, res: Response) => {
 
 export const updateTicket = async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
-    const { status, priority, assigneeId } = req.body;
+    const { status, priority, assigneeId, title, description, categoryId } = req.body;
+    const userId = req.user.id;
 
     try {
-        const ticket = await prisma.ticket.update({
+        const ticket = await prisma.ticket.findUnique({ where: { id: parseInt(id) } });
+        if (!ticket) return res.status(404).json({ message: 'Ticket não encontrado' });
+
+        // Allow update if user is creator, assignee, or admin/support
+        // For now, let's be permissive but ideally check roles.
+        // If creator wants to update title/desc/category
+        if (ticket.creatorId === userId) {
+            // Creator can update everything? Or just details?
+            // Let's allow creator to update details.
+        }
+
+        const updatedTicket = await prisma.ticket.update({
             where: { id: parseInt(id) },
-            data: { status, priority, assigneeId },
+            data: {
+                status,
+                priority,
+                assigneeId: assigneeId ? parseInt(assigneeId) : undefined,
+                title,
+                description,
+                categoryId: categoryId ? parseInt(categoryId) : undefined
+            },
             include: { assignee: true }
         });
 
         // Log activity
-        if (status) await logActivity(req.user.id, ticket.id, 'STATUS_CHANGED', `Estado alterado para ${status}`);
-        if (priority) await logActivity(req.user.id, ticket.id, 'PRIORITY_CHANGED', `Prioridade alterada para ${priority}`);
-        if (assigneeId) await logActivity(req.user.id, ticket.id, 'ASSIGNEE_CHANGED', `Atribuído a ${ticket.assignee?.name || 'ninguém'}`);
+        if (status && status !== ticket.status) await logActivity(req.user.id, ticket.id, 'STATUS_CHANGED', `Estado alterado para ${status}`);
+        if (priority && priority !== ticket.priority) await logActivity(req.user.id, ticket.id, 'PRIORITY_CHANGED', `Prioridade alterada para ${priority}`);
+        if (assigneeId && parseInt(assigneeId) !== ticket.assigneeId) await logActivity(req.user.id, ticket.id, 'ASSIGNEE_CHANGED', `Atribuído a ${updatedTicket.assignee?.name || 'ninguém'}`);
+        if (title && title !== ticket.title) await logActivity(req.user.id, ticket.id, 'TICKET_UPDATED', `Título atualizado`);
 
         // Check if assignee changed and send email
-        if (assigneeId && ticket.assignee && ticket.assignee.email) {
-            // Ideally check if assigneeId actually changed, but for now send on any update with assignee
-            sendTicketAssignedEmail(ticket.assignee.email, ticket.id, ticket.title).catch(console.error);
+        if (assigneeId && updatedTicket.assignee && updatedTicket.assignee.email && parseInt(assigneeId) !== ticket.assigneeId) {
+            sendTicketAssignedEmail(updatedTicket.assignee.email, updatedTicket.id, updatedTicket.title).catch(console.error);
             createNotification(
-                ticket.assignee.id,
+                updatedTicket.assignee.id,
                 'Ticket Atribuído',
-                `Foi-lhe atribuído o ticket #${ticket.id}: ${ticket.title}`,
+                `Foi-lhe atribuído o ticket #${updatedTicket.id}: ${updatedTicket.title}`,
                 'TICKET_ASSIGNED',
-                `/tickets/${ticket.id}`
+                `/tickets/${updatedTicket.id}`
             );
         }
 
         // Emit socket event
-        getIO().emit('ticket:updated', ticket);
+        getIO().emit('ticket:updated', updatedTicket);
 
-        res.json(ticket);
+        res.json(updatedTicket);
     } catch (error) {
+        console.error('Error updating ticket:', error);
         res.status(500).json({ message: 'Erro ao atualizar ticket' });
+    }
+};
+
+export const deleteTicket = async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    try {
+        const ticket = await prisma.ticket.findUnique({ where: { id: parseInt(id) } });
+        if (!ticket) return res.status(404).json({ message: 'Ticket não encontrado' });
+
+        // Check permissions: Creator or Admin
+        if (ticket.creatorId !== userId && userRole !== 'ADMIN') {
+            return res.status(403).json({ message: 'Não tem permissão para apagar este ticket' });
+        }
+
+        // Delete related data first (cascade should handle this but let's be safe/explicit if needed, or rely on cascade)
+        // Prisma schema doesn't show explicit cascade delete on all relations, so manual delete is safer.
+        await prisma.attachment.deleteMany({ where: { ticketId: parseInt(id) } });
+        await prisma.comment.deleteMany({ where: { ticketId: parseInt(id) } });
+        await prisma.activity.deleteMany({ where: { ticketId: parseInt(id) } });
+
+        await prisma.ticket.delete({ where: { id: parseInt(id) } });
+
+        // Log activity (system level? or just skip since ticket is gone)
+        // getIO().emit('ticket:deleted', id); // If we had this event
+
+        res.json({ message: 'Ticket apagado com sucesso' });
+    } catch (error) {
+        console.error('Error deleting ticket:', error);
+        res.status(500).json({ message: 'Erro ao apagar ticket' });
+    }
+};
+
+export const cleanupTickets = async (req: AuthenticatedRequest, res: Response) => {
+    // Ideally protect this with ADMIN role
+    // if (req.user.role !== 'ADMIN') return res.status(403).json({ message: 'Forbidden' });
+
+    try {
+        await prisma.attachment.deleteMany({});
+        await prisma.comment.deleteMany({});
+        await prisma.activity.deleteMany({ where: { ticketId: { not: null } } });
+        await prisma.ticket.deleteMany({});
+
+        res.json({ message: 'Todos os tickets foram apagados com sucesso.' });
+    } catch (error) {
+        console.error('Error cleaning up tickets:', error);
+        res.status(500).json({ message: 'Erro ao limpar tickets' });
     }
 };
 

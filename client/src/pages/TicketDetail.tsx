@@ -278,6 +278,26 @@ export default function TicketDetail() {
                                 </select>
                             </div>
                         )}
+                        {(user?.id === ticket.creator.id || user?.role === 'ADMIN') && (
+                            <button
+                                onClick={async () => {
+                                    if (!window.confirm('Tem a certeza que deseja apagar este ticket? Esta ação é irreversível.')) return;
+                                    try {
+                                        await api.delete(`/tickets/${id}`);
+                                        toast.success('Ticket apagado com sucesso');
+                                        navigate('/tickets');
+                                    } catch (error) {
+                                        toast.error('Erro ao apagar ticket');
+                                    }
+                                }}
+                                className="ml-2 px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded-md transition-colors text-sm font-medium flex items-center"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Apagar
+                            </button>
+                        )}
                     </div>
                 </div>
 
