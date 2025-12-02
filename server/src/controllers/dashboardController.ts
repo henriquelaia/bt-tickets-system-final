@@ -56,14 +56,31 @@ export const getStats = async (req: AuthenticatedRequest, res: Response) => {
             };
         }
 
+        // Calculate totals for easier frontend consumption
+        const totalAssigned = assignedOpen + assignedInProgress;
+        const totalCreated = createdOpen + createdClosed;
+
+        // For backwards compatibility, also include legacy fields
+        const total = await prisma.ticket.count();
+        const open = await prisma.ticket.count({ where: { status: Status.OPEN } });
+        const pending = await prisma.ticket.count({ where: { status: Status.IN_PROGRESS } });
+
         res.json({
+            // Legacy fields for existing dashboard cards
+            total,
+            open,
+            pending,
+            recentActivity,
+            // New user-specific statistics
             assigned: {
                 open: assignedOpen,
-                inProgress: assignedInProgress
+                inProgress: assignedInProgress,
+                total: totalAssigned
             },
             created: {
                 open: createdOpen,
-                closed: createdClosed
+                closed: createdClosed,
+                total: totalCreated
             },
             ...adminStats
         });

@@ -39,7 +39,7 @@ export default function Dashboard() {
         <div>
             <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Dashboard</h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
                     <div className="flex items-center justify-between">
                         <div>
@@ -72,6 +72,36 @@ export default function Dashboard() {
                         </div>
                         <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-full">
                             <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Atribuídos a Mim</p>
+                            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.assigned?.total || 0}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {stats.assigned?.open || 0} abertos, {stats.assigned?.inProgress || 0} em progresso
+                            </p>
+                        </div>
+                        <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-full">
+                            <Ticket className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Criados por Mim</p>
+                            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.created?.total || 0}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {stats.created?.open || 0} abertos, {stats.created?.closed || 0} fechados
+                            </p>
+                        </div>
+                        <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-full">
+                            <Ticket className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                         </div>
                     </div>
                 </div>

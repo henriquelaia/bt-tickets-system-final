@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../lib/api';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { Search, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,7 @@ interface TicketListProps {
 
 export default function TicketList({ filter }: TicketListProps) {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -135,7 +136,8 @@ export default function TicketList({ filter }: TicketListProps) {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-200">
+            {/* Desktop Table View - Hidden on mobile/tablet */}
+            <div className="hidden lg:block bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-200">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700/50">
                         <tr>
@@ -155,7 +157,11 @@ export default function TicketList({ filter }: TicketListProps) {
                         {Array.isArray(tickets) && tickets.map((ticket) => {
                             if (!ticket) return null;
                             return (
-                                <tr key={ticket.id || Math.random()} className="hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors duration-150">
+                                <tr
+                                    key={ticket.id || Math.random()}
+                                    onClick={() => navigate(`/tickets/${ticket.id}`)}
+                                    className="hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors duration-150 cursor-pointer"
+                                >
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">#{ticket.id}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">{ticket.title || 'Sem Título'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -192,6 +198,7 @@ export default function TicketList({ filter }: TicketListProps) {
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <Link
                                             to={`/tickets/${ticket.id}`}
+                                            onClick={(e) => e.stopPropagation()}
                                             className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 px-3 py-1 rounded-md transition-colors"
                                         >
                                             Ver
@@ -204,6 +211,97 @@ export default function TicketList({ filter }: TicketListProps) {
                 </table>
                 {tickets.length === 0 && (
                     <div className="p-8 text-center text-gray-500 dark:text-gray-400">Nenhum ticket encontrado.</div>
+                )}
+            </div>
+
+            {/* Mobile/Tablet Card View - Shown on small and medium screens */}
+            <div className="lg:hidden space-y-4">
+                {Array.isArray(tickets) && tickets.length > 0 ? (
+                    tickets.map((ticket) => {
+                        if (!ticket) return null;
+                        return (
+                            <div
+                                key={ticket.id || Math.random()}
+                                onClick={() => navigate(`/tickets/${ticket.id}`)}
+                                className="relative bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-200 hover:shadow-lg hover:border-blue-400 dark:hover:border-blue-500 active:scale-[0.99] cursor-pointer group"
+                            >
+                                {/* Arrow indicator in top-right corner */}
+                                <div className="absolute top-4 right-4 p-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </div>
+
+                                <div className="flex items-start justify-between mb-3 pr-8">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">#{ticket.id}</span>
+                                            <span className={clsx(
+                                                "px-2.5 py-1 text-xs font-semibold rounded-full whitespace-nowrap",
+                                                ticket.status === 'OPEN' ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :
+                                                    ticket.status === 'IN_PROGRESS' ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" :
+                                                        ticket.status === 'RESOLVED' ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" :
+                                                            "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                                            )}>
+                                                {STATUS_LABELS[ticket.status] || ticket.status}
+                                            </span>
+                                        </div>
+                                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-1 line-clamp-2">
+                                            {ticket.title || 'Sem Título'}
+                                        </h3>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                                    <div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Prioridade</p>
+                                        <p className={clsx(
+                                            "font-semibold text-sm",
+                                            ticket.priority === 'HIGH' || ticket.priority === 'URGENT' ? "text-red-600 dark:text-red-400" : "text-gray-700 dark:text-gray-300"
+                                        )}>
+                                            {PRIORITY_LABELS[ticket.priority] || ticket.priority}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Categoria</p>
+                                        <p className="font-semibold text-sm text-gray-700 dark:text-gray-300 truncate">
+                                            {ticket.category?.name || 'Sem Categoria'}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                            {filter === 'assigned' ? 'Criador' : 'Atribuído a'}
+                                        </p>
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="h-5 w-5 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 flex-shrink-0">
+                                                {(filter === 'assigned' ? (ticket.creator?.name || '?') : (ticket.assignee?.name || '?')).charAt(0)}
+                                            </div>
+                                            <p className="font-semibold text-sm text-gray-700 dark:text-gray-300 truncate">
+                                                {filter === 'assigned' ? (ticket.creator?.name || 'Desconhecido') : (ticket.assignee?.name || 'Não atribuído')}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Data</p>
+                                        <p className="font-semibold text-sm text-gray-700 dark:text-gray-300">
+                                            {ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : '-'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })
+                ) : (
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 text-center text-gray-500 dark:text-gray-400">
+                        Nenhum ticket encontrado.
+                    </div>
+                )}
+            </div>
+
+            {/* Pagination - Shared for both views */}
+            <div className="bg-white dark:bg-gray-800 mt-4 lg:mt-0">
+                {tickets.length === 0 && (
+                    <div className="hidden lg:block p-8 text-center text-gray-500 dark:text-gray-400">Nenhum ticket encontrado.</div>
                 )}
 
                 {/* Pagination Controls */}
