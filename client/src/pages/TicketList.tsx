@@ -10,7 +10,7 @@ import { useSocket } from '../context/SocketContext';
 import toast from 'react-hot-toast';
 
 interface TicketListProps {
-    filter: 'assigned' | 'created';
+    filter: 'assigned' | 'created' | 'all';
 }
 
 export default function TicketList({ filter }: TicketListProps) {
@@ -31,7 +31,15 @@ export default function TicketList({ filter }: TicketListProps) {
 
     const fetchTickets = () => {
         setLoading(true);
-        const params: any = filter === 'assigned' ? { assignedToMe: true } : { createdByMe: true };
+        let params: any = {};
+
+        if (filter === 'assigned') {
+            params.assignedToMe = true;
+        } else if (filter === 'created') {
+            params.createdByMe = true;
+        }
+        // if filter is 'all', we don't add specific user filters, just fetch all (backend supports this)
+
         if (search) params.search = search;
         if (startDate) params.startDate = startDate;
         if (endDate) params.endDate = endDate;
@@ -83,7 +91,8 @@ export default function TicketList({ filter }: TicketListProps) {
     return (
         <div>
             <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">
-                {filter === 'assigned' ? 'Tickets Atribuídos a Mim' : 'Tickets Criados por Mim'}
+                {filter === 'assigned' ? 'Tickets Atribuídos a Mim' :
+                    filter === 'created' ? 'Tickets Criados por Mim' : 'Todos os Tickets'}
             </h2>
 
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6 flex flex-wrap gap-4 items-center transition-colors duration-200">

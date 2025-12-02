@@ -224,162 +224,82 @@ export default function TicketDetail() {
                                 >
                                     Cancelar
                                 </button>
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50"
-                                >
-                                    Confirmar
-                                </button>
+                                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Descrição</h3>
+                                <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-md text-gray-700 dark:text-gray-300 whitespace-pre-wrap border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                                    {ticket.description}
+                                </div>
                             </div>
-                        </form>
-                    </div>
-                </div>
-            )}
 
-            <div className="mb-6">
-                <Link to="/tickets" className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center transition-colors">
-                    <ArrowLeft className="h-4 w-4 mr-1" />
-                    Voltar aos Tickets
-                </Link>
-            </div>
+                            <div>
+                                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+                                    <MessageSquare className="h-5 w-5 mr-2" />
+                                    Comentários ({ticket.comments?.length || 0})
+                                </h3>
 
-            <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-8 transition-colors duration-200">
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <div className="flex items-center space-x-3 mb-2">
-                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">#{ticket.id} - {ticket.title}</h1>
-                                <span className={clsx(
-                                    "px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full border",
-                                    ticket.status === 'OPEN' ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800" :
-                                        ticket.status === 'IN_PROGRESS' ? "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800" :
-                                            ticket.status === 'CLOSED' ? "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600" :
-                                                "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                                )}>
-                                    {STATUS_LABELS[ticket.status] || ticket.status}
-                                </span>
-                            </div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Criado por <span className="font-medium text-gray-900 dark:text-white">{ticket.creator?.name || 'Desconhecido'}</span> em {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : '-'}
-                            </p>
-                        </div>
-                        {user?.role === 'ADMIN' && (
-                            <div className="flex space-x-2">
-                                <select
-                                    value={ticket.status}
-                                    onChange={(e) => handleStatusChange(e.target.value)}
-                                    className="block w-32 pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors duration-200"
-                                >
-                                    <option value="OPEN">Aberto</option>
-                                    <option value="IN_PROGRESS">Em Progresso</option>
-                                    <option value="RESOLVED">Resolvido</option>
-                                    <option value="CLOSED">Fechado</option>
-                                </select>
-                            </div>
-                        )}
-                        {(user?.id === ticket.creator?.id || user?.role === 'ADMIN') && (
-                            <button
-                                onClick={async () => {
-                                    if (!window.confirm('Tem a certeza que deseja apagar este ticket? Esta ação é irreversível.')) return;
-                                    try {
-                                        await api.delete(`/tickets/${id}`);
-                                        toast.success('Ticket apagado com sucesso');
-                                        navigate('/tickets');
-                                    } catch (error) {
-                                        toast.error('Erro ao apagar ticket');
-                                    }
-                                }}
-                                className="ml-2 px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded-md transition-colors text-sm font-medium flex items-center"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                                Apagar
-                            </button>
-                        )}
-                    </div>
-                </div>
+                                <div className="space-y-4 mb-6">
+                                    {ticket.comments?.map((comment) => (
+                                        <div key={comment.id} className="flex space-x-3">
+                                            <div className="flex-shrink-0">
+                                                <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300">
+                                                    {comment.user?.name?.charAt(0) || '?'}
+                                                </div>
+                                            </div>
+                                            <div className="flex-grow">
+                                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600 transition-colors duration-200">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="text-sm font-medium text-gray-900 dark:text-white">{comment.user?.name || 'Utilizador Desconhecido'}</span>
+                                                        <span className="text-xs text-gray-500 dark:text-gray-400">{comment.createdAt ? new Date(comment.createdAt).toLocaleString() : '-'}</span>
+                                                    </div>
+                                                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {(!ticket.comments || ticket.comments.length === 0) && (
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm italic">Ainda sem comentários.</p>
+                                    )}
+                                </div>
 
-                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="md:col-span-2 space-y-6">
-                        <div>
-                            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Descrição</h3>
-                            <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-md text-gray-700 dark:text-gray-300 whitespace-pre-wrap border border-gray-200 dark:border-gray-700 transition-colors duration-200">
-                                {ticket.description}
-                            </div>
-                        </div>
-
-                        <div>
-                            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-                                <MessageSquare className="h-5 w-5 mr-2" />
-                                Comentários ({ticket.comments?.length || 0})
-                            </h3>
-
-                            <div className="space-y-4 mb-6">
-                                {ticket.comments?.map((comment) => (
-                                    <div key={comment.id} className="flex space-x-3">
+                                <form onSubmit={handleAddComment} className="flex flex-col space-y-3">
+                                    <div className="flex items-start space-x-3">
                                         <div className="flex-shrink-0">
                                             <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300">
-                                                {comment.user?.name?.charAt(0) || '?'}
+                                                {user?.name?.charAt(0) || '?'}
                                             </div>
                                         </div>
                                         <div className="flex-grow">
-                                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600 transition-colors duration-200">
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{comment.user?.name || 'Utilizador Desconhecido'}</span>
-                                                    <span className="text-xs text-gray-500 dark:text-gray-400">{comment.createdAt ? new Date(comment.createdAt).toLocaleString() : '-'}</span>
-                                                </div>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
-                                            </div>
+                                            <textarea
+                                                rows={3}
+                                                className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200"
+                                                placeholder="Adicionar um comentário..."
+                                                value={newComment}
+                                                onChange={(e) => setNewComment(e.target.value)}
+                                            />
                                         </div>
                                     </div>
-                                ))}
-                                {(!ticket.comments || ticket.comments.length === 0) && (
-                                    <p className="text-gray-500 dark:text-gray-400 text-sm italic">Ainda sem comentários.</p>
-                                )}
-                            </div>
-
-                            <form onSubmit={handleAddComment} className="flex flex-col space-y-3">
-                                <div className="flex items-start space-x-3">
-                                    <div className="flex-shrink-0">
-                                        <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300">
-                                            {user?.name?.charAt(0) || '?'}
-                                        </div>
-                                    </div>
-                                    <div className="flex-grow">
-                                        <textarea
-                                            rows={3}
-                                            className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors duration-200"
-                                            placeholder="Adicionar um comentário..."
-                                            value={newComment}
-                                            onChange={(e) => setNewComment(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex justify-between items-center pl-12">
-                                    <input
-                                        type="file"
-                                        onChange={e => setFile(e.target.files ? e.target.files[0] : null)}
-                                        className="text-xs text-gray-500 dark:text-gray-400
+                                    <div className="flex justify-between items-center pl-12">
+                                        <input
+                                            type="file"
+                                            onChange={e => setFile(e.target.files ? e.target.files[0] : null)}
+                                            className="text-xs text-gray-500 dark:text-gray-400
                                             file:mr-2 file:py-1 file:px-2
                                             file:rounded-md file:border-0
                                             file:text-xs file:font-semibold
                                             file:bg-blue-50 file:text-blue-700
                                             hover:file:bg-blue-100
                                             dark:file:bg-blue-900/20 dark:file:text-blue-400"
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={submitting || (!newComment.trim() && !file)}
-                                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors duration-200"
-                                    >
-                                        <Send className="h-4 w-4 mr-2" />
-                                        Publicar
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={submitting || (!newComment.trim() && !file)}
+                                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors duration-200"
+                                        >
+                                            <Send className="h-4 w-4 mr-2" />
+                                            Publicar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                     </div>
 
                     <div className="space-y-6">
@@ -444,6 +364,6 @@ export default function TicketDetail() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

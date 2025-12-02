@@ -36,6 +36,7 @@ function AppRoutes() {
         <Route index element={<Dashboard />} />
         <Route path="my-tickets" element={<TicketList filter="created" />} />
         <Route path="assigned-tickets" element={<TicketList filter="assigned" />} />
+        <Route path="tickets" element={<TicketList filter="all" />} />
         <Route path="kanban" element={<KanbanBoard />} />
         <Route path="new-ticket" element={<NewTicket />} />
         <Route path="tickets/:id" element={<TicketDetail />} />
