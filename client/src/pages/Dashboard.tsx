@@ -77,31 +77,45 @@ export default function Dashboard() {
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-4">
                         <div>
                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Atribuídos a Mim</p>
                             <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.assigned?.total || 0}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {stats.assigned?.open || 0} abertos, {stats.assigned?.inProgress || 0} em progresso
-                            </p>
                         </div>
                         <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-full">
                             <Ticket className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                         </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                            <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">Abertos</p>
+                            <p className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.assigned?.open || 0}</p>
+                        </div>
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                            <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">Em Progresso</p>
+                            <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{stats.assigned?.inProgress || 0}</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-4">
                         <div>
                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Criados por Mim</p>
                             <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.created?.total || 0}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {stats.created?.open || 0} abertos, {stats.created?.closed || 0} fechados
-                            </p>
                         </div>
                         <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-full">
                             <Ticket className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                            <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">Abertos</p>
+                            <p className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.created?.open || 0}</p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Fechados</p>
+                            <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">{stats.created?.closed || 0}</p>
                         </div>
                     </div>
                 </div>

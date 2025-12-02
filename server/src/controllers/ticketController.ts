@@ -176,7 +176,10 @@ export const getTicket = async (req: Request, res: Response) => {
                 assignee: { select: { id: true, name: true } },
                 category: true,
                 comments: {
-                    include: { user: { select: { id: true, name: true } } },
+                    include: {
+                        user: { select: { id: true, name: true } },
+                        attachments: true
+                    },
                     orderBy: { createdAt: 'asc' }
                 },
                 attachments: true

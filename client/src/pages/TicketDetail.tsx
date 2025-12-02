@@ -27,6 +27,7 @@ interface Comment {
     content: string;
     createdAt: string;
     user: { id: number; name: string };
+    attachments?: Attachment[];
 }
 
 interface Attachment {
@@ -509,6 +510,28 @@ export default function TicketDetail() {
                                                         <span className="text-xs text-gray-500 dark:text-gray-400">{comment.createdAt ? new Date(comment.createdAt).toLocaleString() : '-'}</span>
                                                     </div>
                                                     <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
+
+                                                    {/* Comment Attachments */}
+                                                    {comment.attachments && comment.attachments.length > 0 && (
+                                                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 space-y-1">
+                                                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Anexos:</p>
+                                                            {comment.attachments.map(att => (
+                                                                <a
+                                                                    key={att.id}
+                                                                    href={`http://localhost:3000${att.url}`}
+                                                                    download={att.name}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="flex items-center text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline py-1"
+                                                                >
+                                                                    <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                                                    </svg>
+                                                                    {att.name}
+                                                                </a>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -606,11 +629,15 @@ export default function TicketDetail() {
                                             <li key={att.id}>
                                                 <a
                                                     href={`http://localhost:3000${att.url}`}
+                                                    download={att.name}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-sm text-blue-600 hover:underline flex items-center dark:text-blue-400 dark:hover:text-blue-300"
+                                                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline flex items-center dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                                                 >
-                                                    📄 {att.name}
+                                                    <svg className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    {att.name}
                                                 </a>
                                             </li>
                                         ))}

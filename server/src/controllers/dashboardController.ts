@@ -17,11 +17,21 @@ export const getStats = async (req: AuthenticatedRequest, res: Response) => {
         });
 
         const resolved = await prisma.ticket.count({ where: { status: Status.RESOLVED } });
+
+        // Get activity relevant to this user only (tickets they created, tickets assigned to them, or their actions)
         const recentActivity = await prisma.activity.findMany({
+            where: {
+                OR: [
+                    { ticket: { creatorId: userId } },
+                    { ticket: { assigneeId: userId } },
+                    { userId: userId }
+                ]
+            },
             take: 10,
             orderBy: { createdAt: 'desc' },
             include: {
-                user: { select: { name: true, avatarUrl: true } }
+                user: { select: { name: true, avatarUrl: true } },
+                ticket: { select: { id: true, title: true } }
             }
         });
 
