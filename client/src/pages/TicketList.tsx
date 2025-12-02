@@ -143,51 +143,54 @@ export default function TicketList({ filter }: TicketListProps) {
                         </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {tickets.map((ticket) => (
-                            <tr key={ticket.id} className="hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors duration-150">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">#{ticket.id}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">{ticket.title}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                    <span className={clsx(
-                                        "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                                        ticket.status === 'OPEN' ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :
-                                            ticket.status === 'IN_PROGRESS' ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" :
-                                                ticket.status === 'RESOLVED' ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" :
-                                                    "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                                    )}>
-                                        {STATUS_LABELS[ticket.status] || ticket.status}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    <span className={clsx(
-                                        "font-medium",
-                                        ticket.priority === 'HIGH' || ticket.priority === 'URGENT' ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-400"
-                                    )}>
-                                        {PRIORITY_LABELS[ticket.priority] || ticket.priority}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{ticket.category?.name || 'Sem Categoria'}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    <div className="flex items-center">
-                                        <div className="h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 mr-2">
-                                            {(filter === 'assigned' ? (ticket.creator?.name || '?') : (ticket.assignee?.name || '?')).charAt(0)}
+                        {Array.isArray(tickets) && tickets.map((ticket) => {
+                            if (!ticket) return null;
+                            return (
+                                <tr key={ticket.id || Math.random()} className="hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors duration-150">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">#{ticket.id}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">{ticket.title || 'Sem Título'}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                        <span className={clsx(
+                                            "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                                            ticket.status === 'OPEN' ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :
+                                                ticket.status === 'IN_PROGRESS' ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" :
+                                                    ticket.status === 'RESOLVED' ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" :
+                                                        "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                                        )}>
+                                            {STATUS_LABELS[ticket.status] || ticket.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <span className={clsx(
+                                            "font-medium",
+                                            ticket.priority === 'HIGH' || ticket.priority === 'URGENT' ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-400"
+                                        )}>
+                                            {PRIORITY_LABELS[ticket.priority] || ticket.priority}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{ticket.category?.name || 'Sem Categoria'}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <div className="flex items-center">
+                                            <div className="h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 mr-2">
+                                                {(filter === 'assigned' ? (ticket.creator?.name || '?') : (ticket.assignee?.name || '?')).charAt(0)}
+                                            </div>
+                                            {filter === 'assigned' ? (ticket.creator?.name || 'Desconhecido') : (ticket.assignee?.name || 'Não atribuído')}
                                         </div>
-                                        {filter === 'assigned' ? (ticket.creator?.name || 'Desconhecido') : (ticket.assignee?.name || 'Não atribuído')}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    {new Date(ticket.createdAt).toLocaleDateString()}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <Link
-                                        to={`/tickets/${ticket.id}`}
-                                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 px-3 py-1 rounded-md transition-colors"
-                                    >
-                                        Ver
-                                    </Link>
-                                </td>
-                            </tr>
-                        ))}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        {ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : '-'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <Link
+                                            to={`/tickets/${ticket.id}`}
+                                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 px-3 py-1 rounded-md transition-colors"
+                                        >
+                                            Ver
+                                        </Link>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
                 {tickets.length === 0 && (

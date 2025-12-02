@@ -261,7 +261,7 @@ export default function TicketDetail() {
                                 </span>
                             </div>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Criado por <span className="font-medium text-gray-900 dark:text-white">{ticket.creator.name}</span> em {new Date(ticket.createdAt).toLocaleString()}
+                                Criado por <span className="font-medium text-gray-900 dark:text-white">{ticket.creator?.name || 'Desconhecido'}</span> em {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : '-'}
                             </p>
                         </div>
                         {user?.role === 'ADMIN' && (
@@ -278,7 +278,7 @@ export default function TicketDetail() {
                                 </select>
                             </div>
                         )}
-                        {(user?.id === ticket.creator.id || user?.role === 'ADMIN') && (
+                        {(user?.id === ticket.creator?.id || user?.role === 'ADMIN') && (
                             <button
                                 onClick={async () => {
                                     if (!window.confirm('Tem a certeza que deseja apagar este ticket? Esta ação é irreversível.')) return;
@@ -313,30 +313,29 @@ export default function TicketDetail() {
                         <div>
                             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
                                 <MessageSquare className="h-5 w-5 mr-2" />
-                                Comentários ({ticket.comments.length})
+                                Comentários ({ticket.comments?.length || 0})
                             </h3>
 
                             <div className="space-y-4 mb-6">
-                                {ticket.comments.map((comment) => (
+                                {ticket.comments?.map((comment) => (
                                     <div key={comment.id} className="flex space-x-3">
                                         <div className="flex-shrink-0">
                                             <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300">
-                                                {comment.user.name.charAt(0)}
+                                                {comment.user?.name?.charAt(0) || '?'}
                                             </div>
                                         </div>
                                         <div className="flex-grow">
                                             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600 transition-colors duration-200">
                                                 <div className="flex justify-between items-center mb-1">
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{comment.user.name}</span>
-                                                    <span className="text-xs text-gray-500 dark:text-gray-400">{new Date(comment.createdAt).toLocaleString()}</span>
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{comment.user?.name || 'Utilizador Desconhecido'}</span>
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400">{comment.createdAt ? new Date(comment.createdAt).toLocaleString() : '-'}</span>
                                                 </div>
                                                 <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
-                                                {/* Display attachments linked to this comment if any - logic needs backend support to return them nested or we filter from main list if they have commentId */}
                                             </div>
                                         </div>
                                     </div>
                                 ))}
-                                {ticket.comments.length === 0 && (
+                                {(!ticket.comments || ticket.comments.length === 0) && (
                                     <p className="text-gray-500 dark:text-gray-400 text-sm italic">Ainda sem comentários.</p>
                                 )}
                             </div>
@@ -345,7 +344,7 @@ export default function TicketDetail() {
                                 <div className="flex items-start space-x-3">
                                     <div className="flex-shrink-0">
                                         <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300">
-                                            {user?.name.charAt(0)}
+                                            {user?.name?.charAt(0) || '?'}
                                         </div>
                                     </div>
                                     <div className="flex-grow">
@@ -401,7 +400,7 @@ export default function TicketDetail() {
                                 </div>
                                 <div>
                                     <dt className="text-xs text-gray-500 dark:text-gray-400">Categoria</dt>
-                                    <dd className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{ticket.category.name}</dd>
+                                    <dd className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{ticket.category?.name || 'Sem Categoria'}</dd>
                                 </div>
                                 <div>
                                     <dt className="text-xs text-gray-500 dark:text-gray-400">Atribuído a</dt>
@@ -409,9 +408,9 @@ export default function TicketDetail() {
                                         {ticket.assignee ? (
                                             <>
                                                 <div className="h-5 w-5 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-xs text-gray-600 dark:text-gray-300 mr-2">
-                                                    {ticket.assignee.name.charAt(0)}
+                                                    {ticket.assignee.name?.charAt(0) || '?'}
                                                 </div>
-                                                {ticket.assignee.name}
+                                                {ticket.assignee.name || 'Desconhecido'}
                                             </>
                                         ) : (
                                             <span className="text-gray-400 italic">Não atribuído</span>
