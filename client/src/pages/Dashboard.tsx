@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
 import api from '../lib/api';
-import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Ticket, CheckCircle, Clock } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
 
 export default function Dashboard() {
     const navigate = useNavigate();
-    const { user } = useAuth();
     const { socket } = useSocket();
     const [stats, setStats] = useState<any>(null);
 
@@ -84,7 +82,7 @@ export default function Dashboard() {
                 </div>
 
                 <div
-                    onClick={() => navigate(`/tickets?assignedTo=${user?.id}`)}
+                    onClick={() => navigate('/assigned-tickets')}
                     className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-200 cursor-pointer hover:shadow-md hover:border-purple-400 dark:hover:border-purple-600 hover:scale-105"
                 >
                     <div className="flex items-center justify-between mb-4">
@@ -109,7 +107,7 @@ export default function Dashboard() {
                 </div>
 
                 <div
-                    onClick={() => navigate(`/tickets?createdBy=${user?.id}`)}
+                    onClick={() => navigate('/my-tickets')}
                     className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-200 cursor-pointer hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-600 hover:scale-105"
                 >
                     <div className="flex items-center justify-between mb-4">
