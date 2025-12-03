@@ -23,7 +23,7 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
                         title,
                         description,
                         priority: priority || 'MEDIUM',
-                        categoryId: categoryId,
+                        categoryId: parseInt(categoryId),
                         creatorId: req.user.id,
                         assigneeId: parseInt(assignedUserId)
                     },
@@ -68,7 +68,7 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
                 title,
                 description,
                 priority: priority || 'MEDIUM',
-                categoryId: categoryId,
+                categoryId: parseInt(categoryId),
                 creatorId: req.user.id,
                 assigneeId: assigneeId ? parseInt(assigneeId) : null
             },
