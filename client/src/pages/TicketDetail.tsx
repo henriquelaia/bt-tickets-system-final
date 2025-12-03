@@ -7,6 +7,8 @@ import clsx from 'clsx';
 import toast from 'react-hot-toast';
 import { ArrowLeft, MessageSquare, Send } from 'lucide-react';
 import { STATUS_LABELS, PRIORITY_LABELS } from '../utils/translations';
+import { API_URL } from '../config';
+import { AttachmentPreview } from '../components/AttachmentPreview';
 
 interface Ticket {
     id: number;
@@ -513,22 +515,14 @@ export default function TicketDetail() {
 
                                                     {/* Comment Attachments */}
                                                     {comment.attachments && comment.attachments.length > 0 && (
-                                                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 space-y-1">
+                                                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 space-y-2">
                                                             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Anexos:</p>
                                                             {comment.attachments.map(att => (
-                                                                <a
+                                                                <AttachmentPreview
                                                                     key={att.id}
-                                                                    href={`http://localhost:3000${att.url}`}
-                                                                    download={att.name}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="flex items-center text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline py-1"
-                                                                >
-                                                                    <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                                                    </svg>
-                                                                    {att.name}
-                                                                </a>
+                                                                    url={`${API_URL}${att.url}`}
+                                                                    name={att.name}
+                                                                />
                                                             ))}
                                                         </div>
                                                     )}
@@ -628,7 +622,7 @@ export default function TicketDetail() {
                                         {ticket.attachments.map(att => (
                                             <li key={att.id}>
                                                 <a
-                                                    href={`http://localhost:3000${att.url}`}
+                                                    href={`${API_URL}${att.url}`}
                                                     download={att.name}
                                                     target="_blank"
                                                     rel="noopener noreferrer"

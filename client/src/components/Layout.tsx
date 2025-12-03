@@ -3,10 +3,11 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LayoutDashboard, Ticket, LogOut, PlusCircle, Users, Settings, Menu, User as UserIcon, Activity } from 'lucide-react';
 import clsx from 'clsx';
-
 import { useTheme } from '../context/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
 import NotificationBell from './NotificationBell';
+import { API_URL } from '../config';
+import { QuickSearch } from './QuickSearch';
 
 export default function Layout() {
     const { user, logout } = useAuth();
@@ -56,7 +57,7 @@ export default function Layout() {
                     <div className="flex items-center space-x-3 mb-2">
                         <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/30">
                             {user?.avatarUrl ? (
-                                <img src={`http://localhost:3000${user.avatarUrl}`} alt={user.name} className="w-full h-full object-cover" />
+                                <img src={`${API_URL}${user.avatarUrl}`} alt={user.name} className="w-full h-full object-cover" />
                             ) : (
                                 <span className="text-lg font-bold">{user?.name?.charAt(0)}</span>
                             )}
@@ -159,6 +160,9 @@ export default function Layout() {
                     <Outlet />
                 </main>
             </div>
+
+            {/* Quick Search - Global */}
+            <QuickSearch />
         </div>
     );
 }

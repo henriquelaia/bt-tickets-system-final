@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { validateFile, formatFileSize, FILE_UPLOAD } from '../config';
+import { TICKET_TEMPLATES, getTemplateById } from '../utils/ticketTemplates';
 
 export default function NewTicket() {
     const navigate = useNavigate();
@@ -22,6 +24,47 @@ export default function NewTicket() {
             if (res.data.length > 0) setCategoryId(res.data[0].id);
         }).catch(console.error);
     }, []);
+
+    // Aplicar template
+    const applyTemplate = (templateId: string) => {
+        if (!templateId) return;
+
+        const template = getTemplateById(templateId);
+        if (!template) return;
+
+        setTitle(template.title);
+        setDescription(template.description);
+        setPriority(template.priority);
+
+        // Tentar encontrar categoria sugerida
+        const suggestedCat = categories.find(c =>
+            c.name.toLowerCase().includes(template.suggestedCategory.toLowerCase())
+        );
+        if (suggestedCat) {
+            setCategoryId(suggestedCat.id);
+        }
+
+        toast.success(`Template "${template.name}" aplicado`);
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = e.target.files?.[0];
+        if (!selectedFile) {
+            setFile(null);
+            return;
+        }
+
+        const validation = validateFile(selectedFile);
+        if (!validation.valid) {
+            toast.error(validation.error || 'Ficheiro inválido');
+            e.target.value = ''; // Clear input
+            setFile(null);
+            return;
+        }
+
+        setFile(selectedFile);
+        toast.success(`Ficheiro selecionado: ${selectedFile.name} (${formatFileSize(selectedFile.size)})`);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -94,6 +137,28 @@ export default function NewTicket() {
         <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200">
             <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Criar Novo Ticket</h2>
             <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Template Selector */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <label className="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
+                        💡 Usar Template (Opcional)
+                    </label>
+                    <select
+                        onChange={(e) => applyTemplate(e.target.value)}
+                        defaultValue=""
+                        className="block w-full px-3 py-2 border border-blue-300 dark:border-blue-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                    >
+                        <option value="">Selecionar template...</option>
+                        {TICKET_TEMPLATES.map(template => (
+                            <option key={template.id} value={template.id}>
+                                {template.name}
+                            </option>
+                        ))}
+                    </select>
+                    <p className="text-xs text-blue-700 dark:text-blue-400 mt-2">
+                        Os templates preenchem automaticamente o título, descrição e prioridade
+                    </p>
+                </div>
+
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Título</label>
                     <input
@@ -203,10 +268,16 @@ export default function NewTicket() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Anexo (Opcional)</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Anexo (Opcional)
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                            Máximo {(FILE_UPLOAD.MAX_SIZE / (1024 * 1024)).toFixed(0)}MB - {FILE_UPLOAD.ALLOWED_EXTENSIONS.join(', ')}
+                        </span>
+                    </label>
                     <input
                         type="file"
-                        onChange={e => setFile(e.target.files ? e.target.files[0] : null)}
+                        onChange={handleFileChange}
+                        accept={FILE_UPLOAD.ALLOWED_TYPES.join(',')}
                         className="mt-1 block w-full text-sm text-gray-500 dark:text-gray-400
                             file:mr-4 file:py-2 file:px-4
                             file:rounded-md file:border-0
@@ -215,6 +286,11 @@ export default function NewTicket() {
                             hover:file:bg-blue-100
                             dark:file:bg-blue-900/20 dark:file:text-blue-400"
                     />
+                    {file && (
+                        <p className="mt-2 text-sm text-green-600 dark:text-green-400">
+                            ✓ {file.name} ({formatFileSize(file.size)})
+                        </p>
+                    )}
                 </div>
 
                 <div className="flex justify-end">
