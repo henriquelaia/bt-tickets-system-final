@@ -359,7 +359,7 @@ export const uploadAttachment = async (req: Request, res: Response) => {
     try {
         const attachment = await prisma.attachment.create({
             data: {
-                url: `/uploads/${req.file.filename}`,
+                url: req.file.path, // Cloudinary retorna URL completa em req.file.path
                 name: req.file.originalname,
                 ticketId: parseInt(id),
                 commentId: commentId ? parseInt(commentId) : null

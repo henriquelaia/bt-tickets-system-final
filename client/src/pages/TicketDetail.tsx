@@ -520,7 +520,7 @@ export default function TicketDetail() {
                                                             {comment.attachments.map(att => (
                                                                 <AttachmentPreview
                                                                     key={att.id}
-                                                                    url={`${API_URL}${att.url}`}
+                                                                    url={att.url} // Cloudinary URL já completa
                                                                     name={att.name}
                                                                 />
                                                             ))}
