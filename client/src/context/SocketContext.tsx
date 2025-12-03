@@ -31,7 +31,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         newSocket.on('connect', () => {
             console.log('✅ WebSocket connected');
             setIsConnected(true);
-            toast.success('Conexão estabelecida', { duration: 2000 });
+            // Não mostrar toast no primeiro connect para evitar confusão
         });
 
         newSocket.on('disconnect', (reason) => {
@@ -71,7 +71,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         newSocket.on('connect_error', (error) => {
             console.error('❌ Connection error:', error);
             setIsConnected(false);
-            toast.error('Falha ao conectar ao servidor. Tentando novamente...', { duration: 5000 });
+            // Não mostrar toast imediatamente - pode ser só loading inicial
         });
 
         return () => {
