@@ -16,9 +16,18 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        console.log('Connecting to WebSocket at:', WS_URL);
+        // Obter token do localStorage para autenticação
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            console.warn('⚠️ No authentication token found. Skipping WebSocket connection.');
+            return;
+        }
+
+        console.log('🔌 Connecting to WebSocket at:', WS_URL);
 
         const newSocket = io(WS_URL, {
+            auth: { token }, // Passa token para autenticação
             reconnection: true,
             reconnectionDelay: 1000,
             reconnectionDelayMax: 5000,
@@ -32,6 +41,11 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             console.log('✅ WebSocket connected');
             setIsConnected(true);
             // Não mostrar toast no primeiro connect para evitar confusão
+        });
+
+        // Confirmação de conexão do servidor
+        newSocket.on('connected', (data) => {
+            console.log('✅ Server confirmed connection:', data);
         });
 
         newSocket.on('disconnect', (reason) => {

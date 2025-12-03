@@ -1,24 +1,64 @@
 import { Server } from 'socket.io';
 import { Server as HttpServer } from 'http';
+import jwt from 'jsonwebtoken';
 
 let io: Server;
 
 export const initSocket = (httpServer: HttpServer) => {
     io = new Server(httpServer, {
         cors: {
-            origin: '*', // Allow all origins for simplicity in dev
-            methods: ['GET', 'POST']
+            origin: process.env.CLIENT_URL || '*',
+            methods: ['GET', 'POST'],
+            credentials: true
+        }
+    });
+
+    // Middleware de autenticação
+    io.use((socket, next) => {
+        const token = socket.handshake.auth.token;
+
+        if (!token) {
+            console.warn('⚠️ Socket connection without token');
+            return next(new Error('Authentication required'));
+        }
+
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as any;
+            socket.data.userId = decoded.userId;
+            socket.data.userEmail = decoded.email;
+            next();
+        } catch (error) {
+            console.error('❌ Invalid token:', error);
+            return next(new Error('Invalid token'));
         }
     });
 
     io.on('connection', (socket) => {
-        console.log('Client connected:', socket.id);
+        const userId = socket.data.userId;
+        const userEmail = socket.data.userEmail;
+
+        console.log(`✅ User ${userId} (${userEmail}) connected:`, socket.id);
+
+        // JOIN ROOM DO UTILIZADOR - CRÍTICO para receber notificações!
+        socket.join(`user:${userId}`);
+        console.log(`✅ User ${userId} joined room: user:${userId}`);
+
+        // Confirmar conexão ao cliente
+        socket.emit('connected', {
+            userId,
+            message: 'Connected to notification server'
+        });
 
         socket.on('disconnect', () => {
-            console.log('Client disconnected:', socket.id);
+            console.log(`❌ User ${userId} (${userEmail}) disconnected:`, socket.id);
+        });
+
+        socket.on('error', (error) => {
+            console.error(`❌ Socket error for user ${userId}:`, error);
         });
     });
 
+    console.log('🚀 Socket.IO server initialized with authentication');
     return io;
 };
 
