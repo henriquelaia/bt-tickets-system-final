@@ -107,8 +107,9 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
 };
 
 export const getTickets = async (req: AuthenticatedRequest, res: Response) => {
-    const { status, priority, category, assignedToMe, createdByMe, search, startDate, endDate, page = 1, limit = 10 } = req.query;
+    const { status, priority, category, assignedTo, createdBy, search, startDate, endDate, page = 1, limit = 10 } = req.query;
     const userId = req.user.id;
+    const isAdmin = req.user.role === 'ADMIN';
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
@@ -116,12 +117,37 @@ export const getTickets = async (req: AuthenticatedRequest, res: Response) => {
 
     const where: any = {};
 
+    // 🔒 SEGURANÇA: Utilizadores regulares só veem SEUS tickets
+    if (!isAdmin) {
+        where.OR = [
+            { creatorId: userId },
+            { assigneeId: userId }
+        ];
+    }
+
+    // Filtros adicionais (só admin pode ver tickets de outros)
     if (status) where.status = status;
     if (priority) where.priority = priority;
-    if (category) where.category = { name: category }; // Assuming category name is passed, or adjust if ID
+    if (category) where.category = { name: category };
 
-    if (assignedToMe === 'true') where.assigneeId = userId;
-    if (createdByMe === 'true') where.creatorId = userId;
+    // Query params assignedTo e createdBy (respeitando permissões)
+    if (assignedTo) {
+        const targetUserId = parseInt(assignedTo as string);
+        // Não-admin só pode filtrar por si mesmo
+        if (!isAdmin && targetUserId !== userId) {
+            return res.status(403).json({ message: 'Sem permissão para ver tickets de outros utilizadores' });
+        }
+        where.assigneeId = targetUserId;
+    }
+
+    if (createdBy) {
+        const targetUserId = parseInt(createdBy as string);
+        // Não-admin só pode filtrar por si mesmo
+        if (!isAdmin && targetUserId !== userId) {
+            return res.status(403).json({ message: 'Sem permissão para ver tickets de outros utilizadores' });
+        }
+        where.creatorId = targetUserId;
+    }
 
     if (search) {
         where.OR = [
@@ -245,19 +271,38 @@ export const updateTicket = async (req: AuthenticatedRequest, res: Response) => 
     const { id } = req.params;
     const { status, priority, assigneeId, title, description, categoryId } = req.body;
     const userId = req.user.id;
+    const isAdmin = req.user.role === 'ADMIN';
 
     try {
         const ticket = await prisma.ticket.findUnique({ where: { id: parseInt(id) } });
         if (!ticket) return res.status(404).json({ message: 'Ticket não encontrado' });
 
-        // Allow update if user is creator, assignee, or admin/support
-        // For now, let's be permissive but ideally check roles.
-        // If creator wants to update title/desc/category
-        if (ticket.creatorId === userId) {
-            // Creator can update everything? Or just details?
-            // Let's allow creator to update details.
+        // 🔒 VALIDAÇÃO DE PERMISSÕES
+        const isCreator = ticket.creatorId === userId;
+        const isAssignee = ticket.assigneeId === userId;
+
+        // Caso 1: Assignee pode APENAS mudar status para RESOLVED
+        if (isAssignee && !isCreator && !isAdmin) {
+            // Assignee só pode resolver ticket
+            if (!status || status !== 'RESOLVED') {
+                return res.status(403).json({
+                    message: 'Utilizador atribuído só pode resolver o ticket'
+                });
+            }
+            // Não pode alterar outros campos
+            if (priority || assigneeId || title || description || categoryId) {
+                return res.status(403).json({
+                    message: 'Sem permissão para editar outros campos do ticket'
+                });
+            }
         }
 
+        // Caso 2: Não é criador, assignee ou admin
+        if (!isCreator && !isAssignee && !isAdmin) {
+            return res.status(403).json({ message: 'Sem permissão para editar este ticket' });
+        }
+
+        // Caso 3: Criador ou Admin podem editar tudo
         const updatedTicket = await prisma.ticket.update({
             where: { id: parseInt(id) },
             data: {
