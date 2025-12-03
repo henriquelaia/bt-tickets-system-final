@@ -1,5 +1,5 @@
 import express, { Router } from 'express';
-import { createTicket, getTickets, getTicket, addComment, updateTicket, uploadAttachment, deleteTicket, cleanupTickets } from '../controllers/ticketController';
+import { createTicket, getTickets, getTicket, addComment, updateTicket, uploadAttachment, deleteTicket, cleanupTickets, deleteAttachment } from '../controllers/ticketController';
 import upload from '../middleware/upload';
 import { authenticateToken } from '../middleware/auth';
 
@@ -14,6 +14,7 @@ router.get('/:id', (getTicket as unknown) as express.RequestHandler);
 router.patch('/:id', authenticateToken, (updateTicket as unknown) as express.RequestHandler);
 router.delete('/:id', authenticateToken, (deleteTicket as unknown) as express.RequestHandler);
 router.post('/:id/attachments', authenticateToken, upload.single('file'), (uploadAttachment as unknown) as express.RequestHandler);
+router.delete('/:id/attachments/:attachmentId', authenticateToken, (deleteAttachment as unknown) as express.RequestHandler);
 router.post('/:id/comments', (addComment as unknown) as express.RequestHandler);
 
 export default router;

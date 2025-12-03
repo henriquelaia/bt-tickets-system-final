@@ -393,6 +393,8 @@ export const cleanupTickets = async (req: AuthenticatedRequest, res: Response) =
     }
 };
 
+import { supabase } from '../config/supabase';
+
 export const uploadAttachment = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { commentId } = req.body;
@@ -402,16 +404,92 @@ export const uploadAttachment = async (req: Request, res: Response) => {
     }
 
     try {
+        const ticketId = parseInt(id);
+
+        // Gerar nome único do ficheiro
+        const timestamp = Date.now();
+        // Sanitize filename to avoid issues
+        const sanitizedName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const fileName = `${ticketId}/${timestamp}-${sanitizedName}`;
+
+        // Upload para Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('ticket-attachments')
+            .upload(fileName, req.file.buffer, {
+                contentType: req.file.mimetype,
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (uploadError) {
+            console.error('Supabase upload error:', uploadError);
+            return res.status(500).json({ message: 'Erro ao fazer upload para storage' });
+        }
+
+        // Obter URL pública
+        const { data: { publicUrl } } = supabase.storage
+            .from('ticket-attachments')
+            .getPublicUrl(fileName);
+
         const attachment = await prisma.attachment.create({
             data: {
-                url: req.file.path, // Cloudinary retorna URL completa em req.file.path
+                url: publicUrl,
                 name: req.file.originalname,
-                ticketId: parseInt(id),
+                ticketId: ticketId,
                 commentId: commentId ? parseInt(commentId) : null
             }
         });
         res.status(201).json(attachment);
     } catch (error) {
+        console.error('Error uploading attachment:', error);
         res.status(500).json({ message: 'Erro ao carregar ficheiro' });
+    }
+};
+
+export const deleteAttachment = async (req: AuthenticatedRequest, res: Response) => {
+    const { id, attachmentId } = req.params;
+    const userId = req.user.id;
+    const isAdmin = req.user.role === 'ADMIN';
+
+    try {
+        const attachment = await prisma.attachment.findUnique({
+            where: { id: parseInt(attachmentId) },
+            include: { ticket: true }
+        });
+
+        if (!attachment) {
+            return res.status(404).json({ message: 'Anexo não encontrado' });
+        }
+
+        // Check permissions
+        if (!isAdmin && attachment.ticket.creatorId !== userId && attachment.ticket.assigneeId !== userId) {
+            return res.status(403).json({ message: 'Sem permissão para apagar este anexo' });
+        }
+
+        // Extract path from URL
+        // URL format: https://[project].supabase.co/storage/v1/object/public/ticket-attachments/[ticketId]/[filename]
+        const urlParts = attachment.url.split('/ticket-attachments/');
+        if (urlParts.length > 1) {
+            const filePath = urlParts[1];
+
+            // Delete from Supabase Storage
+            const { error: deleteError } = await supabase.storage
+                .from('ticket-attachments')
+                .remove([filePath]);
+
+            if (deleteError) {
+                console.error('Supabase delete error:', deleteError);
+                // Continue to delete from DB even if storage delete fails (orphaned file is better than broken UI)
+            }
+        }
+
+        await prisma.attachment.delete({
+            where: { id: parseInt(attachmentId) }
+        });
+
+        res.json({ message: 'Anexo apagado com sucesso' });
+    } catch (error) {
+        console.error('Error deleting attachment:', error);
+        res.status(500).json({ message: 'Erro ao apagar anexo' });
     }
 };
