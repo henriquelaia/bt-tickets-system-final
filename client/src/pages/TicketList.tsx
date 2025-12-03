@@ -32,6 +32,7 @@ export default function TicketList({ filter }: TicketListProps) {
 
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [totalTickets, setTotalTickets] = useState(0);
     const limit = 10;
 
     const { socket } = useSocket();
@@ -69,9 +70,11 @@ export default function TicketList({ filter }: TicketListProps) {
                 if (Array.isArray(res.data)) {
                     setTickets(res.data);
                     setTotalPages(1);
+                    setTotalTickets(res.data.length);
                 } else {
                     setTickets(res.data.data);
                     setTotalPages(res.data.meta.totalPages);
+                    setTotalTickets(res.data.meta.total);
                 }
             })
             .catch(console.error)
@@ -381,7 +384,7 @@ export default function TicketList({ filter }: TicketListProps) {
                         <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                             <div>
                                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                                    Página <span className="font-medium">{page}</span> de <span className="font-medium">{totalPages}</span>
+                                    Mostrando <span className="font-medium">{((page - 1) * limit) + 1}</span> a <span className="font-medium">{Math.min(page * limit, totalTickets)}</span> de <span className="font-medium">{totalTickets}</span> resultados
                                 </p>
                             </div>
                             <div>
