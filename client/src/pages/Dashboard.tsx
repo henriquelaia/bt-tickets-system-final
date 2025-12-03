@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-
+import { useNavigate } from 'react-router-dom';
 import { Ticket, CheckCircle, Clock } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
 
 export default function Dashboard() {
-
-    // ...
-
-    const { } = useAuth();
+    const navigate = useNavigate();
+    const { user } = useAuth();
     const { socket } = useSocket();
     const [stats, setStats] = useState<any>(null);
 
@@ -40,7 +38,10 @@ export default function Dashboard() {
             <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Dashboard</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                <div
+                    onClick={() => navigate('/tickets')}
+                    className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-200 cursor-pointer hover:shadow-md hover:border-blue-400 dark:hover:border-blue-600 hover:scale-105"
+                >
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total de Tickets</p>
@@ -52,7 +53,10 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                <div
+                    onClick={() => navigate('/tickets?status=OPEN')}
+                    className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-200 cursor-pointer hover:shadow-md hover:border-green-400 dark:hover:border-green-600 hover:scale-105"
+                >
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tickets Abertos</p>
@@ -64,7 +68,10 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                <div
+                    onClick={() => navigate('/tickets?status=IN_PROGRESS')}
+                    className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-200 cursor-pointer hover:shadow-md hover:border-yellow-400 dark:hover:border-yellow-600 hover:scale-105"
+                >
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tickets Pendentes</p>
@@ -76,7 +83,10 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                <div
+                    onClick={() => navigate(`/tickets?assignedTo=${user?.id}`)}
+                    className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-200 cursor-pointer hover:shadow-md hover:border-purple-400 dark:hover:border-purple-600 hover:scale-105"
+                >
                     <div className="flex items-center justify-between mb-4">
                         <div>
                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Atribuídos a Mim</p>
@@ -98,7 +108,10 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                <div
+                    onClick={() => navigate(`/tickets?createdBy=${user?.id}`)}
+                    className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-200 cursor-pointer hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-600 hover:scale-105"
+                >
                     <div className="flex items-center justify-between mb-4">
                         <div>
                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Criados por Mim</p>

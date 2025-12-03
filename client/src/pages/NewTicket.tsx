@@ -3,7 +3,6 @@ import api from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { validateFile, formatFileSize, FILE_UPLOAD } from '../config';
-import { TICKET_TEMPLATES, getTemplateById } from '../utils/ticketTemplates';
 
 export default function NewTicket() {
     const navigate = useNavigate();
@@ -24,28 +23,6 @@ export default function NewTicket() {
             if (res.data.length > 0) setCategoryId(res.data[0].id);
         }).catch(console.error);
     }, []);
-
-    // Aplicar template
-    const applyTemplate = (templateId: string) => {
-        if (!templateId) return;
-
-        const template = getTemplateById(templateId);
-        if (!template) return;
-
-        setTitle(template.title);
-        setDescription(template.description);
-        setPriority(template.priority);
-
-        // Tentar encontrar categoria sugerida
-        const suggestedCat = categories.find(c =>
-            c.name.toLowerCase().includes(template.suggestedCategory.toLowerCase())
-        );
-        if (suggestedCat) {
-            setCategoryId(suggestedCat.id);
-        }
-
-        toast.success(`Template "${template.name}" aplicado`);
-    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
@@ -137,28 +114,6 @@ export default function NewTicket() {
         <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-200">
             <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Criar Novo Ticket</h2>
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Template Selector */}
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                    <label className="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
-                        💡 Usar Template (Opcional)
-                    </label>
-                    <select
-                        onChange={(e) => applyTemplate(e.target.value)}
-                        defaultValue=""
-                        className="block w-full px-3 py-2 border border-blue-300 dark:border-blue-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-                    >
-                        <option value="">Selecionar template...</option>
-                        {TICKET_TEMPLATES.map(template => (
-                            <option key={template.id} value={template.id}>
-                                {template.name}
-                            </option>
-                        ))}
-                    </select>
-                    <p className="text-xs text-blue-700 dark:text-blue-400 mt-2">
-                        Os templates preenchem automaticamente o título, descrição e prioridade
-                    </p>
-                </div>
-
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Título</label>
                     <input
