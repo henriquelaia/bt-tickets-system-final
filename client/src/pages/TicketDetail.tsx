@@ -199,13 +199,18 @@ export default function TicketDetail() {
 
     const handleCloseSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validar que o comentário é obrigatório
+        if (!closeComment.trim()) {
+            toast.error('O comentário de resolução é obrigatório');
+            return;
+        }
+
         setSubmitting(true);
         try {
             let commentId: number | null = null;
-            if (closeComment.trim()) {
-                const res = await api.post(`/tickets/${id}/comments`, { content: closeComment });
-                commentId = res.data.id;
-            }
+            const res = await api.post(`/tickets/${id}/comments`, { content: closeComment });
+            commentId = res.data.id;
 
             if (closeFile) {
                 const formData = new FormData();
@@ -221,6 +226,7 @@ export default function TicketDetail() {
             setShowCloseModal(false);
             setCloseComment('');
             setCloseFile(null);
+            toast.success('Ticket resolvido com sucesso!');
         } catch (error) {
             toast.error('Erro ao fechar ticket');
         } finally {
@@ -283,7 +289,7 @@ export default function TicketDetail() {
                         <form onSubmit={handleCloseSubmit}>
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Comentário Final / Solução
+                                    Comentário Final / Solução <span className="text-red-500">*</span>
                                 </label>
                                 <textarea
                                     value={closeComment}
@@ -291,6 +297,7 @@ export default function TicketDetail() {
                                     className="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                     rows={4}
                                     required
+                                    placeholder="Descreva como resolveu o problema (obrigatório)"
                                 />
                             </div>
                             <div className="mb-6">
@@ -477,6 +484,21 @@ export default function TicketDetail() {
                                             Apagar
                                         </button>
                                     </>
+                                )}
+                                {/* Botão Resolver Ticket - apenas para quem tem o ticket atribuído */}
+                                {user?.id === ticket.assignee?.id && ticket.status !== 'RESOLVED' && ticket.status !== 'CLOSED' && (
+                                    <button
+                                        onClick={() => {
+                                            setTargetStatus('RESOLVED');
+                                            setShowCloseModal(true);
+                                        }}
+                                        className="px-3 py-2 bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 rounded-md transition-colors text-sm font-medium flex items-center"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Resolver Ticket
+                                    </button>
                                 )}
                             </div>
                         </div>

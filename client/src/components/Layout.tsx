@@ -24,13 +24,14 @@ export default function Layout() {
         { label: 'Dashboard', path: '/', icon: LayoutDashboard },
         { label: 'Os Meus Tickets', path: '/my-tickets', icon: Ticket },
         { label: 'Atribuídos a Mim', path: '/assigned-tickets', icon: Ticket },
-        { label: 'Todos os Tickets', path: '/tickets', icon: Ticket },
-        { label: 'Quadro Kanban', path: '/kanban', icon: LayoutDashboard },
         { label: 'Novo Ticket', path: '/new-ticket', icon: PlusCircle },
         { label: 'Perfil', path: '/profile', icon: UserIcon },
     ];
 
+    // Admin-only menu items
     if (user?.role === 'ADMIN') {
+        navItems.splice(3, 0, { label: 'Todos os Tickets', path: '/tickets', icon: Ticket });
+        navItems.splice(4, 0, { label: 'Quadro Kanban', path: '/kanban', icon: LayoutDashboard });
         navItems.push({ label: 'Utilizadores', path: '/admin/users', icon: Users });
         navItems.push({ label: 'Categorias', path: '/admin/categories', icon: Settings });
         navItems.push({ label: 'Análise', path: '/analytics', icon: Activity });

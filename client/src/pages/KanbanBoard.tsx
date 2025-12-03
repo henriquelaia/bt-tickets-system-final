@@ -9,6 +9,7 @@ import { STATUS_LABELS, PRIORITY_LABELS } from '../utils/translations';
 import clsx from 'clsx';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 const COLUMNS = [
     { id: 'OPEN', title: 'Aberto' },
@@ -84,6 +85,7 @@ function KanbanColumn({ id, title, tickets }: { id: string, title: string, ticke
 }
 
 export default function KanbanBoard() {
+    const { user } = useAuth();
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [activeId, setActiveId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
@@ -99,7 +101,12 @@ export default function KanbanBoard() {
 
     const fetchTickets = async () => {
         try {
-            const res = await api.get('/tickets?limit=100'); // Fetch more tickets for board
+            // Admin vê todos, utilizador regular vê apenas atribuídos a ele
+            const endpoint = user?.role === 'ADMIN'
+                ? '/tickets?limit=100'
+                : `/tickets?limit=100&assignedTo=${user?.id}`;
+
+            const res = await api.get(endpoint);
             // Handle pagination structure if present
             const data = Array.isArray(res.data) ? res.data : res.data.data;
             setTickets(data);
