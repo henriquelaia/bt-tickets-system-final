@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
+import { API_URL } from '../config';
 
 interface ImagePreviewProps {
     src: string;
@@ -9,6 +10,16 @@ interface ImagePreviewProps {
 
 export function ImagePreview({ src, alt, className = '' }: ImagePreviewProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [error, setError] = useState(false);
+
+    if (error) {
+        return (
+            <div className={`p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 ${className}`}>
+                <p className="text-sm text-gray-500 dark:text-gray-400">⚠️ Imagem não disponível</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{alt}</p>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -17,6 +28,7 @@ export function ImagePreview({ src, alt, className = '' }: ImagePreviewProps) {
                 alt={alt}
                 className={`cursor-pointer hover:opacity-90 transition-opacity ${className}`}
                 onClick={() => setIsOpen(true)}
+                onError={() => setError(true)}
             />
 
             {isOpen && (
@@ -35,6 +47,7 @@ export function ImagePreview({ src, alt, className = '' }: ImagePreviewProps) {
                         alt={alt}
                         className="max-w-full max-h-full object-contain"
                         onClick={(e) => e.stopPropagation()}
+                        onError={() => setError(true)}
                     />
                 </div>
             )}
@@ -52,11 +65,15 @@ export function AttachmentPreview({ url, name, className = '' }: AttachmentPrevi
     const isImage = name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
     const isPdf = name.match(/\.pdf$/i);
 
+    // Detectar se é URL do Cloudinary ou local
+    const isCloudinaryUrl = url.startsWith('http://') || url.startsWith('https://');
+    const finalUrl = isCloudinaryUrl ? url : `${API_URL}${url}`;
+
     if (isImage) {
         return (
             <div className={`mt-2 ${className}`}>
                 <ImagePreview
-                    src={url}
+                    src={finalUrl}
                     alt={name}
                     className="max-w-sm rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm"
                 />
@@ -67,7 +84,7 @@ export function AttachmentPreview({ url, name, className = '' }: AttachmentPrevi
 
     return (
         <a
-            href={url}
+            href={finalUrl}
             download={name}
             target="_blank"
             rel="noopener noreferrer"
