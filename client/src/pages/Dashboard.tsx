@@ -3,11 +3,15 @@ import api from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import { Ticket, CheckCircle, Clock } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Dashboard() {
     const navigate = useNavigate();
     const { socket } = useSocket();
+    const { user } = useAuth();
     const [stats, setStats] = useState<any>(null);
+
+    const isAdmin = user?.role === 'ADMIN';
 
     const fetchStats = () => {
         api.get('/dashboard/stats')
@@ -36,50 +40,54 @@ export default function Dashboard() {
             <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Dashboard</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
-                <div
-                    onClick={() => navigate('/tickets')}
-                    className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-200 cursor-pointer hover:shadow-md hover:border-blue-400 dark:hover:border-blue-600 hover:scale-105"
-                >
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total de Tickets</p>
-                            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.total}</p>
+                {isAdmin && (
+                    <>
+                        <div
+                            onClick={() => navigate('/tickets')}
+                            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-200 cursor-pointer hover:shadow-md hover:border-blue-400 dark:hover:border-blue-600 hover:scale-105"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total de Tickets</p>
+                                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.total}</p>
+                                </div>
+                                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-full">
+                                    <Ticket className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                                </div>
+                            </div>
                         </div>
-                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-full">
-                            <Ticket className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                        </div>
-                    </div>
-                </div>
 
-                <div
-                    onClick={() => navigate('/tickets?status=OPEN')}
-                    className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-200 cursor-pointer hover:shadow-md hover:border-green-400 dark:hover:border-green-600 hover:scale-105"
-                >
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tickets Abertos</p>
-                            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.open}</p>
+                        <div
+                            onClick={() => navigate('/tickets?status=OPEN')}
+                            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-200 cursor-pointer hover:shadow-md hover:border-green-400 dark:hover:border-green-600 hover:scale-105"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tickets Abertos</p>
+                                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.open}</p>
+                                </div>
+                                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-full">
+                                    <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+                                </div>
+                            </div>
                         </div>
-                        <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-full">
-                            <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-                        </div>
-                    </div>
-                </div>
 
-                <div
-                    onClick={() => navigate('/tickets?status=IN_PROGRESS')}
-                    className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-200 cursor-pointer hover:shadow-md hover:border-yellow-400 dark:hover:border-yellow-600 hover:scale-105"
-                >
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tickets Pendentes</p>
-                            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.pending}</p>
+                        <div
+                            onClick={() => navigate('/tickets?status=IN_PROGRESS')}
+                            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-all duration-200 cursor-pointer hover:shadow-md hover:border-yellow-400 dark:hover:border-yellow-600 hover:scale-105"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Tickets Pendentes</p>
+                                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.pending}</p>
+                                </div>
+                                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-full">
+                                    <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                                </div>
+                            </div>
                         </div>
-                        <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-full">
-                            <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-                        </div>
-                    </div>
-                </div>
+                    </>
+                )}
 
                 <div
                     onClick={() => navigate('/assigned-tickets')}

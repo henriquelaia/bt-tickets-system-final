@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../lib/api';
 import { Link, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
-import { Search, Calendar } from 'lucide-react';
+import { Search, Calendar, Filter } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { Ticket } from '../types';
 import { STATUS_LABELS, PRIORITY_LABELS } from '../utils/translations';
@@ -13,6 +13,11 @@ interface TicketListProps {
     filter: 'assigned' | 'created' | 'all';
 }
 
+interface Category {
+    id: number;
+    name: string;
+}
+
 export default function TicketList({ filter }: TicketListProps) {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -21,14 +26,22 @@ export default function TicketList({ filter }: TicketListProps) {
     const [search, setSearch] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-
-    // ...
+    const [status, setStatus] = useState('');
+    const [category, setCategory] = useState('');
+    const [categories, setCategories] = useState<Category[]>([]);
 
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const limit = 10;
 
     const { socket } = useSocket();
+
+    useEffect(() => {
+        // Fetch categories for filter
+        api.get('/categories')
+            .then(res => setCategories(res.data))
+            .catch(err => console.error('Error fetching categories:', err));
+    }, []);
 
     const fetchTickets = () => {
         setLoading(true);
@@ -44,6 +57,9 @@ export default function TicketList({ filter }: TicketListProps) {
         if (search) params.search = search;
         if (startDate) params.startDate = startDate;
         if (endDate) params.endDate = endDate;
+        if (status) params.status = status;
+        if (category) params.category = category;
+
         params.page = page;
         params.limit = limit;
 
@@ -65,7 +81,7 @@ export default function TicketList({ filter }: TicketListProps) {
     useEffect(() => {
         const timeoutId = setTimeout(fetchTickets, 500);
         return () => clearTimeout(timeoutId);
-    }, [filter, search, startDate, endDate, page]); // Add page dependency
+    }, [filter, search, startDate, endDate, status, category, page]); // Add new dependencies
 
     useEffect(() => {
         if (socket) {
@@ -96,8 +112,8 @@ export default function TicketList({ filter }: TicketListProps) {
                     filter === 'created' ? 'Tickets Criados por Mim' : 'Todos os Tickets'}
             </h2>
 
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6 flex flex-wrap gap-4 items-center transition-colors duration-200">
-                <div className="relative flex-1 min-w-[200px]">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6 flex flex-col md:flex-row gap-4 items-center transition-colors duration-200">
+                <div className="relative flex-1 w-full md:w-auto">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Search className="h-5 w-5 text-gray-400" />
                     </div>
@@ -109,29 +125,68 @@ export default function TicketList({ filter }: TicketListProps) {
                         onChange={(e) => { setSearch(e.target.value); setPage(1); }} // Reset page on search
                     />
                 </div>
-                <div className="flex items-center space-x-2">
-                    <div className="relative">
+
+                <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                    {/* Status Filter */}
+                    <div className="relative min-w-[140px]">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Calendar className="h-4 w-4 text-gray-400" />
+                            <Filter className="h-4 w-4 text-gray-400" />
                         </div>
-                        <input
-                            type="date"
-                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors duration-200"
-                            value={startDate}
-                            onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
-                        />
+                        <select
+                            value={status}
+                            onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+                            className="block w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm appearance-none cursor-pointer"
+                        >
+                            <option value="">Todos Estados</option>
+                            <option value="OPEN">Aberto</option>
+                            <option value="IN_PROGRESS">Em Progresso</option>
+                            <option value="RESOLVED">Resolvido</option>
+                            <option value="CLOSED">Fechado</option>
+                        </select>
                     </div>
-                    <span className="text-gray-500 dark:text-gray-400">-</span>
-                    <div className="relative">
+
+                    {/* Category Filter */}
+                    <div className="relative min-w-[140px]">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Calendar className="h-4 w-4 text-gray-400" />
+                            <Filter className="h-4 w-4 text-gray-400" />
                         </div>
-                        <input
-                            type="date"
-                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors duration-200"
-                            value={endDate}
-                            onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
-                        />
+                        <select
+                            value={category}
+                            onChange={(e) => { setCategory(e.target.value); setPage(1); }}
+                            className="block w-full pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm appearance-none cursor-pointer"
+                        >
+                            <option value="">Todas Categorias</option>
+                            {categories.map(cat => (
+                                <option key={cat.id} value={cat.name}>{cat.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Date Filters */}
+                    <div className="flex items-center space-x-2">
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Calendar className="h-4 w-4 text-gray-400" />
+                            </div>
+                            <input
+                                type="date"
+                                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors duration-200"
+                                value={startDate}
+                                onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+                            />
+                        </div>
+                        <span className="text-gray-500 dark:text-gray-400">-</span>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Calendar className="h-4 w-4 text-gray-400" />
+                            </div>
+                            <input
+                                type="date"
+                                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors duration-200"
+                                value={endDate}
+                                onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
