@@ -73,7 +73,7 @@ export default function Profile() {
                     <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                         {user?.avatarUrl ? (
                             <img
-                                src={`${API_URL}${user.avatarUrl}`}
+                                src={user.avatarUrl?.startsWith('http') ? user.avatarUrl : `${API_URL}${user.avatarUrl}`}
                                 alt={user.name}
                                 className="h-20 w-20 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-sm"
                             />

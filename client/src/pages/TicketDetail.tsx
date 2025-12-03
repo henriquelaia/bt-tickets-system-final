@@ -644,7 +644,7 @@ export default function TicketDetail() {
                                         {ticket.attachments.map(att => (
                                             <li key={att.id}>
                                                 <a
-                                                    href={`${API_URL}${att.url}`}
+                                                    href={att.url.startsWith('http') ? att.url : `${API_URL}${att.url}`}
                                                     download={att.name}
                                                     target="_blank"
                                                     rel="noopener noreferrer"

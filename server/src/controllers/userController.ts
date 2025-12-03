@@ -70,6 +70,8 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
     }
 };
 
+import { supabase } from '../config/supabase';
+
 export const uploadAvatar = async (req: AuthenticatedRequest, res: Response) => {
     const userId = req.user.id;
     if (!req.file) {
@@ -77,14 +79,38 @@ export const uploadAvatar = async (req: AuthenticatedRequest, res: Response) => 
     }
 
     try {
-        const avatarUrl = `/uploads/${req.file.filename}`;
+        // Generate unique filename
+        const timestamp = Date.now();
+        const fileExt = req.file.originalname.split('.').pop();
+        const fileName = `avatars/${userId}-${timestamp}.${fileExt}`;
+
+        // Upload to Supabase
+        const { error: uploadError } = await supabase.storage
+            .from('ticket-attachments') // Using the same bucket
+            .upload(fileName, req.file.buffer, {
+                contentType: req.file.mimetype,
+                cacheControl: '3600',
+                upsert: true
+            });
+
+        if (uploadError) {
+            console.error('Supabase upload error:', uploadError);
+            return res.status(500).json({ message: 'Erro ao fazer upload para storage' });
+        }
+
+        // Get Public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from('ticket-attachments')
+            .getPublicUrl(fileName);
+
         const user = await prisma.user.update({
             where: { id: userId },
-            data: { avatarUrl },
+            data: { avatarUrl: publicUrl },
             select: { id: true, name: true, email: true, role: true, avatarUrl: true }
         });
         res.json(user);
     } catch (error) {
+        console.error('Error uploading avatar:', error);
         res.status(500).json({ message: 'Erro ao carregar avatar' });
     }
 };

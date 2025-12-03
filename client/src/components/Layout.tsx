@@ -58,7 +58,7 @@ export default function Layout() {
                     <div className="flex items-center space-x-3 mb-2">
                         <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/30">
                             {user?.avatarUrl ? (
-                                <img src={`${API_URL}${user.avatarUrl}`} alt={user.name} className="w-full h-full object-cover" />
+                                <img src={user.avatarUrl?.startsWith('http') ? user.avatarUrl : `${API_URL}${user.avatarUrl}`} alt={user.name} className="w-full h-full object-cover" />
                             ) : (
                                 <span className="text-lg font-bold">{user?.name?.charAt(0)}</span>
                             )}
