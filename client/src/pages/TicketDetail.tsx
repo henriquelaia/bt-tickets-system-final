@@ -64,7 +64,8 @@ export default function TicketDetail() {
         description: '',
         priority: 'MEDIUM',
         status: 'OPEN',
-        categoryId: ''
+        categoryId: '',
+        externalReference: ''
     });
     const [categories, setCategories] = useState<Category[]>([]);
     const [showCloseModal, setShowCloseModal] = useState(false);
@@ -78,7 +79,8 @@ export default function TicketDetail() {
                 description: ticket.description || '',
                 priority: ticket.priority || 'MEDIUM',
                 status: ticket.status || 'OPEN',
-                categoryId: ticket.category?.id?.toString() || ''
+                categoryId: ticket.category?.id?.toString() || '',
+                externalReference: ticket.externalReference || ''
             });
         }
     }, [ticket]);
@@ -188,7 +190,8 @@ export default function TicketDetail() {
         try {
             const res = await api.put(`/tickets/${id}`, {
                 ...editForm,
-                categoryId: editForm.categoryId ? parseInt(editForm.categoryId) : undefined
+                categoryId: editForm.categoryId ? parseInt(editForm.categoryId) : undefined,
+                externalReference: categories.find(c => c.id.toString() === editForm.categoryId)?.name === 'Pedido de Informação' ? editForm.externalReference : undefined
             });
             setTicket(res.data);
             setIsEditing(false);
@@ -430,6 +433,21 @@ export default function TicketDetail() {
                                     ))}
                                 </select>
                             </div>
+                            {categories.find(c => c.id.toString() === editForm.categoryId)?.name === 'Pedido de Informação' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Referência Externa <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.externalReference}
+                                        onChange={e => setEditForm({ ...editForm, externalReference: e.target.value })}
+                                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        required
+                                        placeholder="Ex: REF-12345"
+                                    />
+                                </div>
+                            )}
                         </div>
                         <div className="flex justify-end space-x-3 pt-4">
                             <button
