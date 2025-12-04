@@ -233,10 +233,14 @@ export default function TicketList({ filter }: TicketListProps) {
                                             {STATUS_LABELS[ticket.status] || ticket.status}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
                                         <span className={clsx(
-                                            "font-medium",
-                                            ticket.priority === 'HIGH' || ticket.priority === 'URGENT' ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-400"
+                                            "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                                            ticket.priority === 'LOW' ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700" :
+                                                ticket.priority === 'MEDIUM' ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800" :
+                                                    ticket.priority === 'HIGH' ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-200 dark:border-orange-800" :
+                                                        ticket.priority === 'URGENT' ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800" :
+                                                            "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
                                         )}>
                                             {PRIORITY_LABELS[ticket.priority] || ticket.priority}
                                         </span>
@@ -313,12 +317,16 @@ export default function TicketList({ filter }: TicketListProps) {
                                 <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                                     <div>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Prioridade</p>
-                                        <p className={clsx(
-                                            "font-semibold text-sm",
-                                            ticket.priority === 'HIGH' || ticket.priority === 'URGENT' ? "text-red-600 dark:text-red-400" : "text-gray-700 dark:text-gray-300"
+                                        <span className={clsx(
+                                            "px-2 py-0.5 text-xs font-semibold rounded-full border",
+                                            ticket.priority === 'LOW' ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700" :
+                                                ticket.priority === 'MEDIUM' ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800" :
+                                                    ticket.priority === 'HIGH' ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-orange-200 dark:border-orange-800" :
+                                                        ticket.priority === 'URGENT' ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800" :
+                                                            "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700"
                                         )}>
                                             {PRIORITY_LABELS[ticket.priority] || ticket.priority}
-                                        </p>
+                                        </span>
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Categoria</p>

@@ -667,12 +667,15 @@ export default function TicketDetail() {
                                         <dt className="text-xs text-gray-500 dark:text-gray-400">Prioridade</dt>
                                         <dd className="mt-1 text-sm font-medium text-gray-900 dark:text-white flex items-center">
                                             <span className={clsx(
-                                                "h-2.5 w-2.5 rounded-full mr-2",
-                                                ticket.priority === 'URGENT' ? 'bg-red-500' :
-                                                    ticket.priority === 'HIGH' ? 'bg-orange-500' :
-                                                        ticket.priority === 'MEDIUM' ? 'bg-yellow-500' : 'bg-green-500'
-                                            )} />
-                                            {PRIORITY_LABELS[ticket.priority] || ticket.priority}
+                                                "px-2 inline-flex text-xs leading-5 font-semibold rounded-full border",
+                                                ticket.priority === 'LOW' ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700" :
+                                                    ticket.priority === 'MEDIUM' ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800" :
+                                                        ticket.priority === 'HIGH' ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-orange-200 dark:border-orange-800" :
+                                                            ticket.priority === 'URGENT' ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800" :
+                                                                "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700"
+                                            )}>
+                                                {PRIORITY_LABELS[ticket.priority] || ticket.priority}
+                                            </span>
                                         </dd>
                                     </div>
                                     <div>
