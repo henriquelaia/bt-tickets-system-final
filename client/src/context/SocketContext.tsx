@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { WS_URL } from '../config';
 import toast from 'react-hot-toast';
+import { useAuth } from './AuthContext';
 
 interface SocketContextType {
     socket: Socket | null;
@@ -15,14 +16,23 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     const [socket, setSocket] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
 
+    const { user } = useAuth(); // Import useAuth to track login state
+
     useEffect(() => {
         // Obter token do localStorage para autenticação
         const token = localStorage.getItem('token');
 
-        if (!token) {
-            console.warn('⚠️ No authentication token found. Skipping WebSocket connection.');
+        if (!token || !user) {
+            if (socket) {
+                socket.disconnect();
+                setSocket(null);
+                setIsConnected(false);
+            }
             return;
         }
+
+        // Se já existe socket conectado com o mesmo token, não reconectar (opcional, mas bom para evitar reconexões desnecessárias)
+        // Mas como o socket object muda, o cleanup trata disso.
 
         console.log('🔌 Connecting to WebSocket at:', WS_URL);
 
@@ -40,7 +50,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         newSocket.on('connect', () => {
             console.log('✅ WebSocket connected');
             setIsConnected(true);
-            // Não mostrar toast no primeiro connect para evitar confusão
         });
 
         // Confirmação de conexão do servidor
@@ -53,15 +62,15 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             setIsConnected(false);
 
             if (reason === 'io server disconnect') {
+                // Token pode ter expirado ou inválido
                 newSocket.connect();
             }
-
-            toast.error('Conexão perdida. A tentar reconectar...', { duration: 3000 });
         });
+
+        // ... (outros event listeners mantidos)
 
         newSocket.on('reconnect', (attemptNumber) => {
             console.log('🔄 Reconnected after', attemptNumber, 'attempts');
-            toast.success('Reconectado com sucesso!', { duration: 2000 });
         });
 
         newSocket.on('reconnect_attempt', (attemptNumber) => {
@@ -74,18 +83,15 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
         newSocket.on('reconnect_failed', () => {
             console.error('❌ Failed to reconnect after all attempts');
-            toast.error('Não foi possível reconectar. Por favor, recarregue a página.', { duration: 8000 });
         });
 
         newSocket.on('error', (error) => {
             console.error('❌ Socket error:', error);
-            toast.error('Erro de conexão', { duration: 3000 });
         });
 
         newSocket.on('connect_error', (error) => {
             console.error('❌ Connection error:', error);
             setIsConnected(false);
-            // Não mostrar toast imediatamente - pode ser só loading inicial
         });
 
         return () => {
@@ -99,7 +105,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             newSocket.off('error');
             newSocket.off('connect_error');
         };
-    }, []);
+    }, [user]); // Re-run when user changes (login/logout)
 
     return (
         <SocketContext.Provider value={{ socket, isConnected }}>

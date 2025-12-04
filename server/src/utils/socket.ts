@@ -23,7 +23,8 @@ export const initSocket = (httpServer: HttpServer) => {
         }
 
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as any;
+            const secret = process.env.JWT_SECRET || 'supersecretkeychangeinproduction';
+            const decoded = jwt.verify(token, secret) as any;
             socket.data.userId = decoded.userId;
             socket.data.userEmail = decoded.email;
             next();
