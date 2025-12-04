@@ -204,8 +204,7 @@ export default function TicketDetail() {
     const handleUpdateTicket = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const res = await api.put(`/tickets/${id}`, {
-                ...editForm,
+            const res = await api.patch(`/tickets/${id}`, {
                 ...editForm,
                 categoryId: editForm.categoryId ? parseInt(editForm.categoryId) : undefined,
                 assigneeId: editForm.assigneeId ? parseInt(editForm.assigneeId) : undefined,
