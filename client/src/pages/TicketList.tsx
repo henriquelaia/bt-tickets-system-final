@@ -220,7 +220,7 @@ export default function TicketList({ filter }: TicketListProps) {
                                     onClick={() => navigate(`/tickets/${ticket.id}`)}
                                     className="hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors duration-150 cursor-pointer"
                                 >
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">#{ticket.id}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">#{ticket.ticketNumber || ticket.id}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 font-medium">{ticket.title || 'Sem Título'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                                         <span className={clsx(
@@ -293,7 +293,7 @@ export default function TicketList({ filter }: TicketListProps) {
                                 <div className="flex items-start justify-between mb-3 pr-8">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">#{ticket.id}</span>
+                                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">#{ticket.ticketNumber || ticket.id}</span>
                                             <span className={clsx(
                                                 "px-2.5 py-1 text-xs font-semibold rounded-full whitespace-nowrap",
                                                 ticket.status === 'OPEN' ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" :

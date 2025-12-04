@@ -12,6 +12,7 @@ export interface Ticket {
     assignee: { name: string } | null;
     comments?: Comment[];
     attachments?: Attachment[];
+    ticketNumber?: string;
 }
 
 export interface Comment {
