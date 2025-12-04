@@ -1,6 +1,9 @@
 // API Configuration
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-export const WS_URL = API_URL; // WebSocket uses same URL
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+// Derive Base URL (remove /api if present) for WebSocket and Static Assets
+export const BASE_URL = API_URL.replace(/\/api\/?$/, '');
+export const WS_URL = BASE_URL; // WebSocket connects to root, not /api
 
 // File upload constraints
 export const FILE_UPLOAD = {

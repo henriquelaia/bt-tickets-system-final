@@ -7,7 +7,7 @@ import clsx from 'clsx';
 import toast from 'react-hot-toast';
 import { ArrowLeft, MessageSquare, Send } from 'lucide-react';
 import { STATUS_LABELS, PRIORITY_LABELS } from '../utils/translations';
-import { API_URL } from '../config';
+import { API_URL, BASE_URL } from '../config';
 import { AttachmentPreview } from '../components/AttachmentPreview';
 
 interface Ticket {
@@ -736,7 +736,7 @@ export default function TicketDetail() {
                                 {ticket.attachments && ticket.attachments.length > 0 ? (
                                     <ul className="space-y-2">
                                         {ticket.attachments.map(att => {
-                                            const finalUrl = att.url.startsWith('http') ? att.url : `${API_URL}${att.url}`;
+                                            const finalUrl = att.url.startsWith('http') ? att.url : `${BASE_URL}${att.url}`;
                                             return (
                                                 <li key={att.id} className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
                                                     <div className="flex items-center flex-1 min-w-0 mr-4">

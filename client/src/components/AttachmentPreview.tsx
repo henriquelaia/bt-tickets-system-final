@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { API_URL } from '../config';
+import { API_URL, BASE_URL } from '../config';
 
 interface ImagePreviewProps {
     src: string;
@@ -67,7 +67,7 @@ export function AttachmentPreview({ url, name, className = '' }: AttachmentPrevi
 
     // Detectar se é URL do Cloudinary ou local
     const isCloudinaryUrl = url.startsWith('http://') || url.startsWith('https://');
-    const finalUrl = isCloudinaryUrl ? url : `${API_URL}${url}`;
+    const finalUrl = isCloudinaryUrl ? url : `${BASE_URL}${url}`;
 
     if (isImage) {
         return (
