@@ -45,6 +45,11 @@ interface Category {
     name: string;
 }
 
+interface User {
+    id: number;
+    name: string;
+}
+
 export default function TicketDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -66,9 +71,11 @@ export default function TicketDetail() {
         priority: 'MEDIUM',
         status: 'OPEN',
         categoryId: '',
+        assigneeId: '',
         externalReference: ''
     });
     const [categories, setCategories] = useState<Category[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [showCloseModal, setShowCloseModal] = useState(false);
     const [closeComment, setCloseComment] = useState('');
     const [closeFile, setCloseFile] = useState<File | null>(null);
@@ -81,6 +88,7 @@ export default function TicketDetail() {
                 priority: ticket.priority || 'MEDIUM',
                 status: ticket.status || 'OPEN',
                 categoryId: ticket.category?.id?.toString() || '',
+                assigneeId: ticket.assignee?.id?.toString() || '',
                 externalReference: ticket.externalReference || ''
             });
         }
@@ -89,6 +97,7 @@ export default function TicketDetail() {
     useEffect(() => {
         if (isEditing) {
             api.get('/categories').then(res => setCategories(res.data)).catch(err => console.error(err));
+            api.get('/users').then(res => setUsers(res.data)).catch(err => console.error(err));
         }
     }, [isEditing]);
 
@@ -197,7 +206,9 @@ export default function TicketDetail() {
         try {
             const res = await api.put(`/tickets/${id}`, {
                 ...editForm,
+                ...editForm,
                 categoryId: editForm.categoryId ? parseInt(editForm.categoryId) : undefined,
+                assigneeId: editForm.assigneeId ? parseInt(editForm.assigneeId) : undefined,
                 externalReference: categories.find(c => c.id.toString() === editForm.categoryId)?.name === 'Pedido de Informação' ? editForm.externalReference : undefined
             });
             setTicket(res.data);
@@ -430,7 +441,21 @@ export default function TicketDetail() {
                                     <option value="OPEN">Aberto</option>
                                     <option value="IN_PROGRESS">Em Progresso</option>
                                     <option value="RESOLVED">Resolvido</option>
+                                    <option value="RESOLVED">Resolvido</option>
                                     <option value="CLOSED">Fechado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Atribuído a</label>
+                                <select
+                                    value={editForm.assigneeId}
+                                    onChange={e => setEditForm({ ...editForm, assigneeId: e.target.value })}
+                                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                >
+                                    <option value="">Não atribuído</option>
+                                    {users.map(u => (
+                                        <option key={u.id} value={u.id}>{u.name}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
