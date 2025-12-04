@@ -23,6 +23,7 @@ interface Ticket {
     comments: Comment[];
     attachments: Attachment[];
     externalReference?: string;
+    ticketNumber?: string;
 }
 
 interface Comment {
@@ -238,14 +239,23 @@ export default function TicketDetail() {
         }
     };
 
-    const handleDownload = async (e: React.MouseEvent, url: string, filename: string) => {
+    const handleDownload = async (e: React.MouseEvent, attachmentId: number, filename: string) => {
         e.preventDefault();
         const toastId = toast.loading('A iniciar transferência...');
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('Network response was not ok');
 
-            const blob = await response.blob();
+        try {
+            // Use the backend download route which handles headers correctly
+            const downloadUrl = `${API_URL}/tickets/${id}/attachments/${attachmentId}/download`;
+
+            // Fetch with auth token to get the blob
+            const response = await api.get(downloadUrl, {
+                responseType: 'blob'
+            });
+
+            // Create blob link to download
+            const blob = new Blob([response.data], {
+                type: response.headers['content-type']
+            });
             const blobUrl = window.URL.createObjectURL(blob);
 
             const link = document.createElement('a');
@@ -260,8 +270,6 @@ export default function TicketDetail() {
         } catch (error) {
             console.error('Download failed:', error);
             toast.error('Erro ao transferir ficheiro', { id: toastId });
-            // Fallback: open in new tab
-            window.open(url, '_blank');
         }
     };
 
@@ -472,7 +480,7 @@ export default function TicketDetail() {
                         <div className="flex justify-between items-start">
                             <div>
                                 <div className="flex items-center space-x-3 mb-2">
-                                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">#{ticket.id} - {ticket.title}</h1>
+                                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">#{ticket.ticketNumber || ticket.id} - {ticket.title}</h1>
                                     <span className={clsx(
                                         "px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full border",
                                         ticket.status === 'OPEN' ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800" :
@@ -719,8 +727,8 @@ export default function TicketDetail() {
                                                             </svg>
                                                         </a>
                                                         <a
-                                                            href={finalUrl}
-                                                            onClick={(e) => handleDownload(e, finalUrl, att.name)}
+                                                            href="#"
+                                                            onClick={(e) => handleDownload(e, att.id, att.name)}
                                                             className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-md transition-colors cursor-pointer"
                                                             title="Transferir"
                                                         >

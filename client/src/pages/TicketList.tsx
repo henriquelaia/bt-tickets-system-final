@@ -48,10 +48,10 @@ export default function TicketList({ filter }: TicketListProps) {
         setLoading(true);
         let params: any = {};
 
-        if (filter === 'assigned') {
-            params.assignedToMe = true;
-        } else if (filter === 'created') {
-            params.createdByMe = true;
+        if (filter === 'assigned' && user) {
+            params.assignedTo = user.id;
+        } else if (filter === 'created' && user) {
+            params.createdBy = user.id;
         }
         // if filter is 'all', we don't add specific user filters, just fetch all (backend supports this)
 

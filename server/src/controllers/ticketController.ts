@@ -13,11 +13,40 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
     const creatorId = req.user.id;
 
     try {
+        // Generate Ticket Number (YYYY-SEQ)
+        const date = new Date();
+        const year = date.getFullYear().toString();
+
+        // Find last ticket created this year that has a ticketNumber
+        const lastTicket = await prisma.ticket.findFirst({
+            where: {
+                ticketNumber: {
+                    startsWith: year
+                }
+            },
+            orderBy: {
+                ticketNumber: 'desc'
+            }
+        });
+
+        let sequence = 1;
+        if (lastTicket && lastTicket.ticketNumber) {
+            const parts = lastTicket.ticketNumber.split('-');
+            if (parts.length === 2) {
+                sequence = parseInt(parts[1]) + 1;
+            }
+        }
+
+        const ticketNumber = `${year}-${sequence.toString().padStart(4, '0')}`;
+
         // Handle multiple assignees
         if (assigneeIds && Array.isArray(assigneeIds) && assigneeIds.length > 0) {
             const tickets = [];
+            let currentSequence = sequence;
 
             for (const assignedUserId of assigneeIds) {
+                const currentTicketNumber = `${year}-${currentSequence.toString().padStart(4, '0')}`;
+
                 const ticket = await prisma.ticket.create({
                     data: {
                         title,
@@ -26,7 +55,8 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
                         categoryId: parseInt(categoryId),
                         creatorId: req.user.id,
                         assigneeId: parseInt(assignedUserId),
-                        externalReference
+                        externalReference,
+                        ticketNumber: currentTicketNumber
                     },
                     include: {
                         creator: true,
@@ -36,7 +66,7 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
                 });
 
                 // Log activity
-                await logActivity(req.user.id, ticket.id, 'TICKET_CREATED', `Ticket criado: ${ticket.title}`);
+                await logActivity(req.user.id, ticket.id, 'TICKET_CREATED', `Ticket criado: ${ticket.title} (${ticket.ticketNumber})`);
 
                 // Send email to creator (only once per batch? or for each? Let's do for each to be safe/consistent)
                 if (req.user.email) {
@@ -49,18 +79,17 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
                     createNotification(
                         ticket.assignee.id,
                         'Ticket Atribuído',
-                        `Foi-lhe atribuído o ticket #${ticket.id}: ${ticket.title}`,
+                        `Foi-lhe atribuído o ticket ${ticket.ticketNumber}: ${ticket.title}`,
                         'TICKET_ASSIGNED',
                         `/tickets/${ticket.id}`
                     );
                 }
 
                 tickets.push(ticket);
+                currentSequence++;
             }
 
-            return res.status(201).json(tickets[0]); // Return the first one or a list? Frontend expects one object usually. Let's return the first one to avoid breaking frontend immediately, or we can return the list if we update frontend. 
-            // The user said "create two separate tickets". The frontend will likely redirect to "my-tickets" list anyway.
-            // Returning the first one is safe for now.
+            return res.status(201).json(tickets[0]);
         }
 
         // Single assignee or no assignee (Legacy behavior)
@@ -72,7 +101,8 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
                 categoryId: parseInt(categoryId),
                 creatorId: req.user.id,
                 assigneeId: assigneeId ? parseInt(assigneeId) : null,
-                externalReference
+                externalReference,
+                ticketNumber
             },
             include: {
                 creator: true,
@@ -82,7 +112,7 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
         });
 
         // Log activity
-        await logActivity(req.user.id, ticket.id, 'TICKET_CREATED', `Ticket criado: ${ticket.title}`);
+        await logActivity(req.user.id, ticket.id, 'TICKET_CREATED', `Ticket criado: ${ticket.title} (${ticket.ticketNumber})`);
 
         // Send email to creator
         if (req.user.email) {
@@ -95,7 +125,7 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
             createNotification(
                 ticket.assignee.id,
                 'Ticket Atribuído',
-                `Foi-lhe atribuído o ticket #${ticket.id}: ${ticket.title}`,
+                `Foi-lhe atribuído o ticket ${ticket.ticketNumber}: ${ticket.title}`,
                 'TICKET_ASSIGNED',
                 `/tickets/${ticket.id}`
             );
@@ -495,5 +525,57 @@ export const deleteAttachment = async (req: AuthenticatedRequest, res: Response)
     } catch (error) {
         console.error('Error deleting attachment:', error);
         res.status(500).json({ message: 'Erro ao apagar anexo' });
+    }
+};
+export const downloadAttachment = async (req: AuthenticatedRequest, res: Response) => {
+    const { id, attachmentId } = req.params;
+    const userId = req.user.id;
+    const isAdmin = req.user.role === 'ADMIN';
+
+    try {
+        const attachment = await prisma.attachment.findUnique({
+            where: { id: parseInt(attachmentId) },
+            include: { ticket: true }
+        });
+
+        if (!attachment) {
+            return res.status(404).json({ message: 'Anexo não encontrado' });
+        }
+
+        // Check permissions (same as viewing ticket)
+        if (!isAdmin && attachment.ticket.creatorId !== userId && attachment.ticket.assigneeId !== userId) {
+            return res.status(403).json({ message: 'Sem permissão para transferir este anexo' });
+        }
+
+        // Extract path from URL
+        // URL format: https://[project].supabase.co/storage/v1/object/public/ticket-attachments/[ticketId]/[filename]
+        const urlParts = attachment.url.split('/ticket-attachments/');
+        if (urlParts.length <= 1) {
+            return res.status(400).json({ message: 'URL de anexo inválido' });
+        }
+
+        const filePath = urlParts[1];
+
+        // Download from Supabase Storage
+        const { data, error } = await supabase.storage
+            .from('ticket-attachments')
+            .download(filePath);
+
+        if (error || !data) {
+            console.error('Supabase download error:', error);
+            return res.status(500).json({ message: 'Erro ao transferir ficheiro do storage' });
+        }
+
+        // Set headers for download
+        res.setHeader('Content-Disposition', `attachment; filename="${attachment.name}"`);
+        res.setHeader('Content-Type', data.type);
+
+        // Stream the file to the client
+        const buffer = await data.arrayBuffer();
+        res.send(Buffer.from(buffer));
+
+    } catch (error) {
+        console.error('Error downloading attachment:', error);
+        res.status(500).json({ message: 'Erro ao processar transferência' });
     }
 };

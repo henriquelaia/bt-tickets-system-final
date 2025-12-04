@@ -59,6 +59,7 @@ model Ticket {
   status      Status    @default(OPEN)
   priority    Priority  @default(MEDIUM)
   externalReference String?
+  ticketNumber String? @unique
   
   categoryId  Int
   category    Category  @relation(fields: [categoryId], references: [id])
