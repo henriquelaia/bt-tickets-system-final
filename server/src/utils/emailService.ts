@@ -16,25 +16,20 @@ const createTransporter = async () => {
             }
         });
         console.log('Using Real SMTP Server');
-    } else {
-        const testAccount = await nodemailer.createTestAccount();
-        transporter = nodemailer.createTransport({
-            host: 'smtp.ethereal.email',
-            port: 587,
-            secure: false,
-            auth: {
-                user: testAccount.user,
-                pass: testAccount.pass
-            }
-        });
-        console.log('Using Ethereal Test Email');
+        return transporter;
     }
 
-    return transporter;
+    // Email disabled
+    return null;
 };
 
 export const sendTicketCreatedEmail = async (to: string, ticketId: number, title: string) => {
     const transporter = await createTransporter();
+    if (!transporter) {
+        console.log('Email service disabled. Skipping ticket creation email.');
+        return;
+    }
+
     const info = await transporter.sendMail({
         from: '"Ticket System" <system@example.com>',
         to,
@@ -44,11 +39,15 @@ export const sendTicketCreatedEmail = async (to: string, ticketId: number, title
     });
 
     console.log('Message sent: %s', info.messageId);
-    console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
 };
 
 export const sendTicketAssignedEmail = async (to: string, ticketId: number, title: string) => {
     const transporter = await createTransporter();
+    if (!transporter) {
+        console.log('Email service disabled. Skipping assignment email.');
+        return;
+    }
+
     const info = await transporter.sendMail({
         from: '"Ticket System" <system@example.com>',
         to,
@@ -58,5 +57,4 @@ export const sendTicketAssignedEmail = async (to: string, ticketId: number, titl
     });
 
     console.log('Message sent: %s', info.messageId);
-    console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
 };
