@@ -477,12 +477,12 @@ export default function TicketDetail() {
             ) : (
                 <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-8 transition-colors duration-200">
                     <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <div className="flex items-center space-x-3 mb-2">
-                                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">#{ticket.ticketNumber || ticket.id} - {ticket.title}</h1>
+                        <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                            <div className="w-full md:w-auto">
+                                <div className="flex items-center space-x-3 mb-2 flex-wrap gap-y-2">
+                                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white break-words">#{ticket.ticketNumber || ticket.id} - {ticket.title}</h1>
                                     <span className={clsx(
-                                        "px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full border",
+                                        "px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full border whitespace-nowrap",
                                         ticket.status === 'OPEN' ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800" :
                                             ticket.status === 'IN_PROGRESS' ? "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800" :
                                                 ticket.status === 'CLOSED' ? "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600" :
@@ -495,12 +495,12 @@ export default function TicketDetail() {
                                     Criado por <span className="font-medium text-gray-900 dark:text-white">{ticket.creator?.name || 'Desconhecido'}</span> em {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : '-'}
                                 </p>
                             </div>
-                            <div className="flex space-x-2">
+                            <div className="flex flex-wrap gap-2 w-full md:w-auto justify-start md:justify-end">
                                 {user?.role === 'ADMIN' && (
                                     <select
                                         value={ticket.status}
                                         onChange={(e) => handleStatusChange(e.target.value)}
-                                        className="block w-32 pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors duration-200"
+                                        className="block w-full md:w-32 pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors duration-200"
                                     >
                                         <option value="OPEN">Aberto</option>
                                         <option value="IN_PROGRESS">Em Progresso</option>
@@ -512,7 +512,7 @@ export default function TicketDetail() {
                                     <>
                                         <button
                                             onClick={() => setIsEditing(true)}
-                                            className="px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 rounded-md transition-colors text-sm font-medium flex items-center"
+                                            className="px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 rounded-md transition-colors text-sm font-medium flex items-center justify-center flex-1 md:flex-none"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -530,7 +530,7 @@ export default function TicketDetail() {
                                                     toast.error('Erro ao apagar ticket');
                                                 }
                                             }}
-                                            className="px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded-md transition-colors text-sm font-medium flex items-center"
+                                            className="px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded-md transition-colors text-sm font-medium flex items-center justify-center flex-1 md:flex-none"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -546,7 +546,7 @@ export default function TicketDetail() {
                                             setTargetStatus('RESOLVED');
                                             setShowCloseModal(true);
                                         }}
-                                        className="px-3 py-2 bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 rounded-md transition-colors text-sm font-medium flex items-center"
+                                        className="px-3 py-2 bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 rounded-md transition-colors text-sm font-medium flex items-center justify-center flex-1 md:flex-none"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
