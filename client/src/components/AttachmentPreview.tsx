@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { API_URL, BASE_URL } from '../config';
+import { BASE_URL } from '../config';
 
 interface ImagePreviewProps {
     src: string;
