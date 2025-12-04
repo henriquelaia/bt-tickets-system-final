@@ -9,7 +9,7 @@ import { createNotification } from '../utils/notification';
 import { AuthenticatedRequest } from '../types';
 
 export const createTicket = async (req: AuthenticatedRequest, res: Response) => {
-    const { title, description, priority, categoryId, assigneeId, assigneeIds } = req.body;
+    const { title, description, priority, categoryId, assigneeId, assigneeIds, externalReference } = req.body;
     const creatorId = req.user.id;
 
     try {
@@ -25,7 +25,8 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
                         priority: priority || 'MEDIUM',
                         categoryId: parseInt(categoryId),
                         creatorId: req.user.id,
-                        assigneeId: parseInt(assignedUserId)
+                        assigneeId: parseInt(assignedUserId),
+                        externalReference
                     },
                     include: {
                         creator: true,
@@ -70,7 +71,8 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
                 priority: priority || 'MEDIUM',
                 categoryId: parseInt(categoryId),
                 creatorId: req.user.id,
-                assigneeId: assigneeId ? parseInt(assigneeId) : null
+                assigneeId: assigneeId ? parseInt(assigneeId) : null,
+                externalReference
             },
             include: {
                 creator: true,
@@ -152,7 +154,8 @@ export const getTickets = async (req: AuthenticatedRequest, res: Response) => {
     if (search) {
         where.OR = [
             { title: { contains: search as string, mode: 'insensitive' } },
-            { description: { contains: search as string, mode: 'insensitive' } }
+            { description: { contains: search as string, mode: 'insensitive' } },
+            { externalReference: { contains: search as string, mode: 'insensitive' } }
         ];
     }
 
@@ -269,7 +272,7 @@ export const addComment = async (req: AuthenticatedRequest, res: Response) => {
 
 export const updateTicket = async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
-    const { status, priority, assigneeId, title, description, categoryId } = req.body;
+    const { status, priority, assigneeId, title, description, categoryId, externalReference } = req.body;
     const userId = req.user.id;
     const isAdmin = req.user.role === 'ADMIN';
 
@@ -290,7 +293,7 @@ export const updateTicket = async (req: AuthenticatedRequest, res: Response) => 
                 });
             }
             // Não pode alterar outros campos
-            if (priority || assigneeId || title || description || categoryId) {
+            if (priority || assigneeId || title || description || categoryId || externalReference) {
                 return res.status(403).json({
                     message: 'Sem permissão para editar outros campos do ticket'
                 });
@@ -311,7 +314,8 @@ export const updateTicket = async (req: AuthenticatedRequest, res: Response) => 
                 assigneeId: assigneeId ? parseInt(assigneeId) : undefined,
                 title,
                 description,
-                categoryId: categoryId ? parseInt(categoryId) : undefined
+                categoryId: categoryId ? parseInt(categoryId) : undefined,
+                externalReference
             },
             include: { assignee: true }
         });

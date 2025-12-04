@@ -195,7 +195,7 @@ export default function TicketList({ filter }: TicketListProps) {
             </div>
 
             {/* Desktop Table View - Hidden on mobile/tablet */}
-            <div className="hidden lg:block bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-200">
+            <div className="hidden lg:block bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto transition-colors duration-200">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700/50">
                         <tr>

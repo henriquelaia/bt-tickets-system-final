@@ -9,6 +9,7 @@ export default function NewTicket() {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [categoryId, setCategoryId] = useState('');
+    const [externalReference, setExternalReference] = useState('');
     const [priority, setPriority] = useState('MEDIUM');
     const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
     const [file, setFile] = useState<File | null>(null);
@@ -54,7 +55,8 @@ export default function NewTicket() {
                 description,
                 categoryId,
                 priority,
-                assigneeIds: assigneeIds.length > 0 ? assigneeIds : null
+                assigneeIds: assigneeIds.length > 0 ? assigneeIds : null,
+                externalReference: categories.find(c => c.id.toString() === categoryId)?.name === 'Pedido de Informação' ? externalReference : undefined
             });
 
             if (file) {
@@ -149,6 +151,22 @@ export default function NewTicket() {
                             ))}
                         </select>
                     </div>
+
+                    {categories.find(c => c.id.toString() === categoryId)?.name === 'Pedido de Informação' && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Referência Externa <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={externalReference}
+                                onChange={e => setExternalReference(e.target.value)}
+                                className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                                required
+                                placeholder="Ex: REF-12345"
+                            />
+                        </div>
+                    )}
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Prioridade</label>

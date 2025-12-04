@@ -22,6 +22,7 @@ interface Ticket {
     assignee: { id: number; name: string } | null;
     comments: Comment[];
     attachments: Attachment[];
+    externalReference?: string;
 }
 
 interface Comment {
@@ -231,6 +232,33 @@ export default function TicketDetail() {
             toast.error('Erro ao fechar ticket');
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleDownload = async (e: React.MouseEvent, url: string, filename: string) => {
+        e.preventDefault();
+        const toastId = toast.loading('A iniciar transferência...');
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Network response was not ok');
+
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+
+            toast.success('Transferência concluída', { id: toastId });
+        } catch (error) {
+            console.error('Download failed:', error);
+            toast.error('Erro ao transferir ficheiro', { id: toastId });
+            // Fallback: open in new tab
+            window.open(url, '_blank');
         }
     };
 
@@ -619,6 +647,12 @@ export default function TicketDetail() {
                                         <dt className="text-xs text-gray-500 dark:text-gray-400">Categoria</dt>
                                         <dd className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{ticket.category?.name || 'Sem Categoria'}</dd>
                                     </div>
+                                    {ticket.externalReference && (
+                                        <div>
+                                            <dt className="text-xs text-gray-500 dark:text-gray-400">Referência Externa</dt>
+                                            <dd className="mt-1 text-sm font-medium text-gray-900 dark:text-white">{ticket.externalReference}</dd>
+                                        </div>
+                                    )}
                                     <div>
                                         <dt className="text-xs text-gray-500 dark:text-gray-400">Atribuído a</dt>
                                         <dd className="mt-1 text-sm font-medium text-gray-900 dark:text-white flex items-center">
@@ -668,10 +702,8 @@ export default function TicketDetail() {
                                                         </a>
                                                         <a
                                                             href={finalUrl}
-                                                            download={att.name}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-md transition-colors"
+                                                            onClick={(e) => handleDownload(e, finalUrl, att.name)}
+                                                            className="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-md transition-colors cursor-pointer"
                                                             title="Transferir"
                                                         >
                                                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
