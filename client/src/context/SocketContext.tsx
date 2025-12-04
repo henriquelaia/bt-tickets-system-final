@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { WS_URL } from '../config';
-import toast from 'react-hot-toast';
 import { useAuth } from './AuthContext';
 
 interface SocketContextType {
