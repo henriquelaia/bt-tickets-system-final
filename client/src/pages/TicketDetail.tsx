@@ -186,6 +186,12 @@ export default function TicketDetail() {
         }
     };
 
+    useEffect(() => {
+        if (ticket && user && ticket.status === 'OPEN' && ticket.assignee?.id === user.id) {
+            updateStatus('IN_PROGRESS');
+        }
+    }, [ticket?.id, ticket?.status, user?.id]);
+
     const handleUpdateTicket = async (e: React.FormEvent) => {
         e.preventDefault();
         try {

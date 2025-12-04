@@ -314,12 +314,15 @@ export const updateTicket = async (req: AuthenticatedRequest, res: Response) => 
         const isCreator = ticket.creatorId === userId;
         const isAssignee = ticket.assigneeId === userId;
 
-        // Caso 1: Assignee pode APENAS mudar status para RESOLVED
+        // Caso 1: Assignee pode APENAS mudar status para RESOLVED ou IN_PROGRESS (se estiver OPEN)
         if (isAssignee && !isCreator && !isAdmin) {
-            // Assignee só pode resolver ticket
-            if (!status || status !== 'RESOLVED') {
+            // Allow transition from OPEN to IN_PROGRESS
+            const isStartingProgress = ticket.status === 'OPEN' && status === 'IN_PROGRESS';
+            const isResolving = status === 'RESOLVED';
+
+            if (!status || (!isResolving && !isStartingProgress)) {
                 return res.status(403).json({
-                    message: 'Utilizador atribuído só pode resolver o ticket'
+                    message: 'Utilizador atribuído só pode iniciar progresso ou resolver o ticket'
                 });
             }
             // Não pode alterar outros campos
@@ -351,7 +354,13 @@ export const updateTicket = async (req: AuthenticatedRequest, res: Response) => 
         });
 
         // Log activity
-        if (status && status !== ticket.status) await logActivity(req.user.id, ticket.id, 'STATUS_CHANGED', `Estado alterado para ${status}`);
+        if (status && status !== ticket.status) {
+            if (status === 'IN_PROGRESS' && ticket.status === 'OPEN' && isAssignee) {
+                await logActivity(req.user.id, ticket.id, 'STATUS_CHANGED', `Ticket visualizado pela primeira vez: Estado alterado para Em Progresso`);
+            } else {
+                await logActivity(req.user.id, ticket.id, 'STATUS_CHANGED', `Estado alterado para ${status}`);
+            }
+        }
         if (priority && priority !== ticket.priority) await logActivity(req.user.id, ticket.id, 'PRIORITY_CHANGED', `Prioridade alterada para ${priority}`);
         if (assigneeId && parseInt(assigneeId) !== ticket.assigneeId) await logActivity(req.user.id, ticket.id, 'ASSIGNEE_CHANGED', `Atribuído a ${updatedTicket.assignee?.name || 'ninguém'}`);
         if (title && title !== ticket.title) await logActivity(req.user.id, ticket.id, 'TICKET_UPDATED', `Título atualizado`);
