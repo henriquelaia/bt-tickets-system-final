@@ -29,11 +29,29 @@ export const createCategory = async (req: Request, res: Response) => {
 export const deleteCategory = async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
+        // Verificar se há tickets associados a esta categoria
+        const ticketCount = await prisma.ticket.count({
+            where: { categoryId: parseInt(id) }
+        });
+
+        if (ticketCount > 0) {
+            return res.status(409).json({
+                message: `Não é possível apagar esta categoria. Existem ${ticketCount} ticket(s) associado(s).`
+            });
+        }
+
         await prisma.category.delete({
             where: { id: parseInt(id) }
         });
         res.status(204).send();
-    } catch (error) {
+    } catch (error: any) {
+        console.error('Error deleting category:', error);
+        // Catch foreign key constraint error as backup
+        if (error.code === 'P2003') {
+            return res.status(409).json({
+                message: 'Não é possível apagar esta categoria. Existem tickets associados.'
+            });
+        }
         res.status(500).json({ message: 'Erro ao apagar categoria' });
     }
 };
