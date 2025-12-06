@@ -5,24 +5,39 @@ const prisma = new PrismaClient();
 
 export const getStats = async (req: Request, res: Response) => {
     try {
-        const total = await prisma.ticket.count();
-        const open = await prisma.ticket.count({ where: { status: 'OPEN' } });
-        const closed = await prisma.ticket.count({ where: { status: 'CLOSED' } });
-        const inProgress = await prisma.ticket.count({ where: { status: 'IN_PROGRESS' } });
+        // 🚀 OTIMIZAÇÃO: Usar uma única query groupBy em vez de 5 queries count separadas
+        const [statusCounts, resolvedTickets] = await Promise.all([
+            prisma.ticket.groupBy({
+                by: ['status'],
+                _count: { status: true }
+            }),
+            // Limitar a 1000 tickets mais recentes para calcular média (evita scan completo)
+            prisma.ticket.findMany({
+                where: {
+                    status: {
+                        in: ['CLOSED', 'RESOLVED']
+                    }
+                },
+                select: {
+                    createdAt: true,
+                    updatedAt: true
+                },
+                orderBy: { updatedAt: 'desc' },
+                take: 1000 // Limitar para performance
+            })
+        ]);
+
+        // Processar contagens por status
+        const getCount = (status: string) =>
+            statusCounts.find(s => s.status === status)?._count.status || 0;
+
+        const total = statusCounts.reduce((acc, s) => acc + s._count.status, 0);
+        const open = getCount('OPEN');
+        const closed = getCount('CLOSED');
+        const inProgress = getCount('IN_PROGRESS');
+        const resolved = getCount('RESOLVED');
 
         // Calculate average resolution time
-        const resolvedTickets = await prisma.ticket.findMany({
-            where: {
-                status: {
-                    in: ['CLOSED', 'RESOLVED']
-                }
-            },
-            select: {
-                createdAt: true,
-                updatedAt: true
-            }
-        });
-
         let totalTime = 0;
         resolvedTickets.forEach(ticket => {
             totalTime += new Date(ticket.updatedAt).getTime() - new Date(ticket.createdAt).getTime();
@@ -45,10 +60,11 @@ export const getStats = async (req: Request, res: Response) => {
             open,
             closed,
             inProgress,
-            resolved: await prisma.ticket.count({ where: { status: 'RESOLVED' } }),
+            resolved,
             averageResolutionTime: formatDuration(averageTimeMs)
         });
     } catch (error) {
+        console.error('Analytics stats error:', error);
         res.status(500).json({ error: 'Erro ao carregar estatísticas' });
     }
 };

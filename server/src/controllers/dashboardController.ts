@@ -9,71 +9,90 @@ export const getStats = async (req: AuthenticatedRequest, res: Response) => {
     const isAdmin = req.user.role === 'ADMIN';
 
     try {
-        const assignedOpen = await prisma.ticket.count({
-            where: { assigneeId: userId, status: Status.OPEN }
-        });
-        const assignedInProgress = await prisma.ticket.count({
-            where: { assigneeId: userId, status: Status.IN_PROGRESS }
-        });
+        // 🚀 OTIMIZAÇÃO: Executar todas as queries em paralelo com Promise.all
+        // Em vez de ~12 queries sequenciais, fazemos tudo em paralelo
 
-        const resolved = await prisma.ticket.count({ where: { status: Status.RESOLVED } });
-
-        // Get activity relevant to this user only (tickets they created, tickets assigned to them, or their actions)
-        const recentActivity = await prisma.activity.findMany({
-            where: {
-                OR: [
-                    { ticket: { creatorId: userId } },
-                    { ticket: { assigneeId: userId } },
-                    { userId: userId }
-                ]
-            },
-            take: 10,
-            orderBy: { createdAt: 'desc' },
-            include: {
-                user: { select: { name: true, avatarUrl: true } },
-                ticket: { select: { id: true, title: true } }
-            }
-        });
-
-        const createdOpen = await prisma.ticket.count({
-            where: { creatorId: userId, status: Status.OPEN }
-        });
-        const createdClosed = await prisma.ticket.count({
-            where: { creatorId: userId, status: { in: [Status.RESOLVED, Status.CLOSED] } }
-        });
-
-        let adminStats = {};
-        if (isAdmin) {
-            const totalTickets = await prisma.ticket.count();
-            const ticketsByStatus = await prisma.ticket.groupBy({
+        const [
+            // Estatísticas do utilizador - usando groupBy para menos queries
+            userAssignedStats,
+            userCreatedStats,
+            recentActivity,
+            // Estatísticas globais
+            globalStats
+        ] = await Promise.all([
+            // Query agregada para tickets atribuídos ao utilizador
+            prisma.ticket.groupBy({
+                by: ['status'],
+                where: { assigneeId: userId },
+                _count: { status: true }
+            }),
+            // Query agregada para tickets criados pelo utilizador
+            prisma.ticket.groupBy({
+                by: ['status'],
+                where: { creatorId: userId },
+                _count: { status: true }
+            }),
+            // Atividade recente (limite de 10)
+            prisma.activity.findMany({
+                where: {
+                    OR: [
+                        { ticket: { creatorId: userId } },
+                        { ticket: { assigneeId: userId } },
+                        { userId: userId }
+                    ]
+                },
+                take: 10,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    user: { select: { name: true, avatarUrl: true } },
+                    ticket: { select: { id: true, title: true } }
+                }
+            }),
+            // Estatísticas globais usando groupBy
+            prisma.ticket.groupBy({
                 by: ['status'],
                 _count: { status: true }
-            });
-            const ticketsByCategory = await prisma.ticket.groupBy({
-                by: ['categoryId'],
-                _count: { categoryId: true }
-            });
-            const ticketsByPriority = await prisma.ticket.groupBy({
-                by: ['priority'],
-                _count: { priority: true }
-            });
+            })
+        ]);
+
+        // Processar estatísticas de tickets atribuídos
+        const assignedOpen = userAssignedStats.find(s => s.status === Status.OPEN)?._count.status || 0;
+        const assignedInProgress = userAssignedStats.find(s => s.status === Status.IN_PROGRESS)?._count.status || 0;
+        const totalAssigned = userAssignedStats.reduce((acc, s) => acc + s._count.status, 0);
+
+        // Processar estatísticas de tickets criados
+        const createdOpen = userCreatedStats.find(s => s.status === Status.OPEN)?._count.status || 0;
+        const createdClosed = userCreatedStats
+            .filter(s => s.status === Status.RESOLVED || s.status === Status.CLOSED)
+            .reduce((acc, s) => acc + s._count.status, 0);
+        const totalCreated = userCreatedStats.reduce((acc, s) => acc + s._count.status, 0);
+
+        // Processar estatísticas globais
+        const total = globalStats.reduce((acc, s) => acc + s._count.status, 0);
+        const open = globalStats.find(s => s.status === Status.OPEN)?._count.status || 0;
+        const pending = globalStats.find(s => s.status === Status.IN_PROGRESS)?._count.status || 0;
+
+        // Admin stats (apenas se for admin)
+        let adminStats = {};
+        if (isAdmin) {
+            const [ticketsByCategory, ticketsByPriority] = await Promise.all([
+                prisma.ticket.groupBy({
+                    by: ['categoryId'],
+                    _count: { categoryId: true }
+                }),
+                prisma.ticket.groupBy({
+                    by: ['priority'],
+                    _count: { priority: true }
+                })
+            ]);
 
             adminStats = {
-                totalTickets,
-                ticketsByStatus,
+                totalTickets: total,
+                ticketsByStatus: globalStats,
                 ticketsByCategory,
                 ticketsByPriority
             };
         }
-
-        // Calculate totals for easier frontend consumption
-        const totalAssigned = assignedOpen + assignedInProgress;
-        const totalCreated = createdOpen + createdClosed;
-
-        // For backwards compatibility, also include legacy fields
-        const total = await prisma.ticket.count();
-        const open = await prisma.ticket.count({ where: { status: Status.OPEN } });
-        const pending = await prisma.ticket.count({ where: { status: Status.IN_PROGRESS } });
 
         res.json({
             // Legacy fields for existing dashboard cards
@@ -95,6 +114,7 @@ export const getStats = async (req: AuthenticatedRequest, res: Response) => {
             ...adminStats
         });
     } catch (error) {
+        console.error('Dashboard stats error:', error);
         res.status(500).json({ message: 'Erro ao carregar estatísticas' });
     }
 };

@@ -76,6 +76,16 @@ model Ticket {
   comments    Comment[]
   attachments Attachment[]
   activities  Activity[]
+
+  // Índices para melhorar performance das queries
+  @@index([status])
+  @@index([priority])
+  @@index([assigneeId])
+  @@index([creatorId])
+  @@index([categoryId])
+  @@index([createdAt])
+  @@index([status, assigneeId])
+  @@index([status, creatorId])
 }
 
 model Comment {
