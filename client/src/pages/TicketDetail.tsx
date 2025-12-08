@@ -24,6 +24,7 @@ interface Ticket {
     attachments: Attachment[];
     externalReference?: string;
     ticketNumber?: string;
+    potentialAssignees?: { id: number; name: string }[];
 }
 
 interface Comment {
@@ -722,6 +723,17 @@ export default function TicketDetail() {
                                                     </div>
                                                     {ticket.assignee.name || 'Desconhecido'}
                                                 </>
+                                            ) : (ticket.potentialAssignees && ticket.potentialAssignees.length > 0) ? (
+                                                <div className="flex flex-col">
+                                                    <span className="text-gray-500 italic text-xs mb-1">Aguarda reclamação de:</span>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {ticket.potentialAssignees.map(pa => (
+                                                            <span key={pa.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                                                {pa.name}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             ) : (
                                                 <span className="text-gray-400 italic">Não atribuído</span>
                                             )}
