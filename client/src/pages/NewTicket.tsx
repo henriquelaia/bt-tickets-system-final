@@ -12,7 +12,7 @@ export default function NewTicket() {
     const [externalReference, setExternalReference] = useState('');
     const [priority, setPriority] = useState('MEDIUM');
     const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
-    const [file, setFile] = useState<File | null>(null);
+    const [files, setFiles] = useState<File[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,27 +26,37 @@ export default function NewTicket() {
     }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0];
-        if (!selectedFile) {
-            setFile(null);
-            return;
-        }
+        const selectedFiles = Array.from(e.target.files || []);
+        if (selectedFiles.length === 0) return;
 
-        const validation = validateFile(selectedFile);
-        if (!validation.valid) {
-            toast.error(validation.error || 'Ficheiro inválido');
-            e.target.value = ''; // Clear input
-            setFile(null);
-            return;
-        }
+        const validFiles: File[] = [];
 
-        setFile(selectedFile);
-        toast.success(`Ficheiro selecionado: ${selectedFile.name} (${formatFileSize(selectedFile.size)})`);
+        selectedFiles.forEach(file => {
+            const validation = validateFile(file);
+            if (!validation.valid) {
+                toast.error(`${file.name}: ${validation.error || 'Ficheiro inválido'}`);
+            } else {
+                validFiles.push(file);
+            }
+        });
+
+        setFiles(prev => [...prev, ...validFiles]);
+        e.target.value = ''; // Clear input to allow re-selecting same files
+    };
+
+    const removeFile = (index: number) => {
+        setFiles(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (isSubmitting) return;
+
+        // Mandatory Assignee Validation
+        if (assigneeIds.length === 0) {
+            toast.error('Por favor selecione pelo menos um responsável para o ticket.');
+            return;
+        }
 
         setIsSubmitting(true);
         try {
@@ -55,32 +65,37 @@ export default function NewTicket() {
                 description,
                 categoryId,
                 priority,
-                assigneeIds: assigneeIds.length > 0 ? assigneeIds : null,
+                assigneeIds: assigneeIds,
                 externalReference: categories.find(c => c.id.toString() === categoryId)?.name === 'Pedido de Informação' ? externalReference : undefined
             });
 
-            if (file) {
-                const formData = new FormData();
-                formData.append('file', file);
-                // If multiple tickets were created, we might need to handle attachments for all of them.
-                // However, the backend returns the first ticket.
-                // For now, let's attach to the returned ticket ID.
-                // Ideally, the backend should handle attachment duplication or we loop here if we knew all IDs.
-                // Given the constraint, we will attach to the primary (first) ticket returned.
-                await api.post(`/tickets/${res.data.id}/attachments`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
+            // Upload attachments sequentially
+            if (files.length > 0) {
+                for (const file of files) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    try {
+                        await api.post(`/tickets/${res.data.id}/attachments`, formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                    } catch (uploadError) {
+                        console.error(`Error uploading ${file.name}:`, uploadError);
+                        toast.error(`Erro ao carregar ${file.name}`);
+                    }
+                }
             }
 
-            toast.success('Ticket(s) criado(s) com sucesso');
+            toast.success('Ticket criado com sucesso');
             navigate('/my-tickets');
         } catch (error) {
+            console.error(error);
             toast.error('Erro ao criar ticket');
         } finally {
             setIsSubmitting(false);
         }
     };
 
+    // ... dropdown logic (unchanged) ...
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = React.useRef<HTMLDivElement>(null);
 
@@ -184,7 +199,9 @@ export default function NewTicket() {
                 </div>
 
                 <div className="relative" ref={dropdownRef}>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Atribuir a (Múltipla seleção)</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Atribuir a (Obrigatório) <span className="text-red-500">*</span>
+                    </label>
                     <div
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors min-h-[42px] cursor-pointer flex flex-wrap gap-2 items-center"
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -242,15 +259,16 @@ export default function NewTicket() {
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Anexo (Opcional)
+                        Anexos (Opcional)
                         <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                            Máximo {(FILE_UPLOAD.MAX_SIZE / (1024 * 1024)).toFixed(0)}MB - {FILE_UPLOAD.ALLOWED_EXTENSIONS.join(', ')}
+                            Máximo {(FILE_UPLOAD.MAX_SIZE / (1024 * 1024)).toFixed(0)}MB cada - {FILE_UPLOAD.ALLOWED_EXTENSIONS.join(', ')}
                         </span>
                     </label>
                     <input
                         type="file"
                         onChange={handleFileChange}
                         accept={FILE_UPLOAD.ALLOWED_TYPES.join(',')}
+                        multiple
                         className="mt-1 block w-full text-sm text-gray-500 dark:text-gray-400
                             file:mr-4 file:py-2 file:px-4
                             file:rounded-md file:border-0
@@ -259,10 +277,24 @@ export default function NewTicket() {
                             hover:file:bg-blue-100
                             dark:file:bg-blue-900/20 dark:file:text-blue-400"
                     />
-                    {file && (
-                        <p className="mt-2 text-sm text-green-600 dark:text-green-400">
-                            ✓ {file.name} ({formatFileSize(file.size)})
-                        </p>
+                    {files.length > 0 && (
+                        <ul className="mt-2 space-y-1">
+                            {files.map((f, index) => (
+                                <li key={index} className="flex items-center text-sm text-green-600 dark:text-green-400">
+                                    <span className="mr-2">✓ {f.name} ({formatFileSize(f.size)})</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeFile(index)}
+                                        className="text-red-500 hover:text-red-700"
+                                    >
+                                        <span className="sr-only">Remove</span>
+                                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
                     )}
                 </div>
 

@@ -47,6 +47,7 @@ model User {
 
   createdTickets  Ticket[]  @relation("CreatedTickets")
   assignedTickets Ticket[]  @relation("AssignedTickets")
+  potentialTickets Ticket[] @relation("PotentialAssignees")
   comments        Comment[]
   activities      Activity[]
   notifications   Notification[]
@@ -86,6 +87,8 @@ model Ticket {
   @@index([createdAt])
   @@index([status, assigneeId])
   @@index([status, creatorId])
+
+  potentialAssignees User[] @relation("PotentialAssignees")
 }
 
 model Comment {

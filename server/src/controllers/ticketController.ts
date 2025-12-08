@@ -12,6 +12,19 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
     const { title, description, priority, categoryId, assigneeId, assigneeIds, externalReference } = req.body;
     const creatorId = req.user.id;
 
+    // Build list of target assignee IDs
+    const targetAssigneeIds: number[] = [];
+    if (assigneeIds && Array.isArray(assigneeIds)) {
+        assigneeIds.forEach((id: string | number) => targetAssigneeIds.push(typeof id === 'string' ? parseInt(id) : id));
+    } else if (assigneeId) {
+        targetAssigneeIds.push(parseInt(assigneeId));
+    }
+
+    // MANDATORY ASSIGNMENT CHECK
+    if (targetAssigneeIds.length === 0) {
+        return res.status(400).json({ message: 'É obrigatório selecionar pelo menos um responsável para o ticket.' });
+    }
+
     try {
         // Generate Ticket Number (YYYY-SEQ)
         const date = new Date();
@@ -39,60 +52,21 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
 
         const ticketNumber = `${year}-${sequence.toString().padStart(4, '0')}`;
 
-        // Handle multiple assignees
-        if (assigneeIds && Array.isArray(assigneeIds) && assigneeIds.length > 0) {
-            const tickets = [];
-            let currentSequence = sequence;
+        // Determine assignment strategy
+        let finalAssigneeId: number | null = null;
+        let potentialAssigneesConnect: any = undefined;
 
-            for (const assignedUserId of assigneeIds) {
-                const currentTicketNumber = `${year}-${currentSequence.toString().padStart(4, '0')}`;
-
-                const ticket = await prisma.ticket.create({
-                    data: {
-                        title,
-                        description,
-                        priority: priority || 'MEDIUM',
-                        categoryId: parseInt(categoryId),
-                        creatorId: req.user.id,
-                        assigneeId: parseInt(assignedUserId),
-                        externalReference,
-                        ticketNumber: currentTicketNumber
-                    },
-                    include: {
-                        creator: true,
-                        assignee: true,
-                        category: true
-                    }
-                });
-
-                // Log activity
-                await logActivity(req.user.id, ticket.id, 'TICKET_CREATED', `Ticket criado: ${ticket.title} (${ticket.ticketNumber})`);
-
-                // Send email to creator (only once per batch? or for each? Let's do for each to be safe/consistent)
-                if (req.user.email) {
-                    sendTicketCreatedEmail(req.user.email, ticket.id, ticket.title).catch(console.error);
-                }
-
-                // Send email to assignee
-                if (ticket.assignee && ticket.assignee.email) {
-                    sendTicketAssignedEmail(ticket.assignee.email, ticket.id, ticket.title).catch(console.error);
-                    createNotification(
-                        ticket.assignee.id,
-                        'Ticket Atribuído',
-                        `Foi-lhe atribuído o ticket ${ticket.ticketNumber}: ${ticket.title}`,
-                        'TICKET_ASSIGNED',
-                        `/tickets/${ticket.id}`
-                    );
-                }
-
-                tickets.push(ticket);
-                currentSequence++;
-            }
-
-            return res.status(201).json(tickets[0]);
+        if (targetAssigneeIds.length === 1) {
+            // Single assignee: distinct assignment
+            finalAssigneeId = targetAssigneeIds[0];
+        } else {
+            // Multiple assignees: shared ticket (potential assignees)
+            // Leave assigneeId as null, link all to potentialAssignees
+            potentialAssigneesConnect = {
+                connect: targetAssigneeIds.map(id => ({ id }))
+            };
         }
 
-        // Single assignee or no assignee (Legacy behavior)
         const ticket = await prisma.ticket.create({
             data: {
                 title,
@@ -100,14 +74,16 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
                 priority: priority || 'MEDIUM',
                 categoryId: parseInt(categoryId),
                 creatorId: req.user.id,
-                assigneeId: assigneeId ? parseInt(assigneeId) : null,
+                assigneeId: finalAssigneeId,
                 externalReference,
-                ticketNumber
+                ticketNumber,
+                potentialAssignees: potentialAssigneesConnect
             },
             include: {
                 creator: true,
                 assignee: true,
-                category: true
+                category: true,
+                potentialAssignees: true
             }
         });
 
@@ -119,16 +95,34 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
             sendTicketCreatedEmail(req.user.email, ticket.id, ticket.title).catch(console.error);
         }
 
-        // Send email to assignee if assigned immediately
-        if (ticket.assignee && ticket.assignee.email) {
-            sendTicketAssignedEmail(ticket.assignee.email, ticket.id, ticket.title).catch(console.error);
-            createNotification(
-                ticket.assignee.id,
-                'Ticket Atribuído',
-                `Foi-lhe atribuído o ticket ${ticket.ticketNumber}: ${ticket.title}`,
-                'TICKET_ASSIGNED',
-                `/tickets/${ticket.id}`
-            );
+        // Send notifications/emails to assignees
+        // If assigneeId is set, notify that person.
+        // If potentialAssignees has people, notify all of them.
+
+        const recipients = [];
+        if (ticket.assignee) {
+            recipients.push(ticket.assignee);
+        } else if (ticket.potentialAssignees && ticket.potentialAssignees.length > 0) {
+            recipients.push(...ticket.potentialAssignees);
+        }
+
+        for (const user of recipients) {
+            if (user.email) {
+                // Determine message based on type
+                const isShared = !ticket.assigneeId;
+                const msg = isShared
+                    ? `Foi partilhado consigo o ticket ${ticket.ticketNumber}: ${ticket.title}`
+                    : `Foi-lhe atribuído o ticket ${ticket.ticketNumber}: ${ticket.title}`;
+
+                sendTicketAssignedEmail(user.email, ticket.id, ticket.title).catch(console.error);
+                createNotification(
+                    user.id,
+                    'Ticket Atribuído',
+                    msg,
+                    'TICKET_ASSIGNED',
+                    `/tickets/${ticket.id}`
+                );
+            }
         }
 
         res.status(201).json(ticket);
@@ -153,7 +147,11 @@ export const getTickets = async (req: AuthenticatedRequest, res: Response) => {
     if (!isAdmin) {
         where.OR = [
             { creatorId: userId },
-            { assigneeId: userId }
+            { assigneeId: userId },
+            {
+                potentialAssignees: { some: { id: userId } },
+                assigneeId: null
+            }
         ];
     }
 
@@ -307,12 +305,19 @@ export const updateTicket = async (req: AuthenticatedRequest, res: Response) => 
     const isAdmin = req.user.role === 'ADMIN';
 
     try {
-        const ticket = await prisma.ticket.findUnique({ where: { id: parseInt(id) } });
+        const ticket = await prisma.ticket.findUnique({
+            where: { id: parseInt(id) },
+            include: { potentialAssignees: { select: { id: true } } }
+        });
         if (!ticket) return res.status(404).json({ message: 'Ticket não encontrado' });
 
         // 🔒 VALIDAÇÃO DE PERMISSÕES
         const isCreator = ticket.creatorId === userId;
         const isAssignee = ticket.assigneeId === userId;
+        const isPotentialAssignee = ticket.potentialAssignees.some(u => u.id === userId);
+
+        // Logic check regarding claiming
+        const isClaiming = isPotentialAssignee && !ticket.assigneeId && status === 'IN_PROGRESS';
 
         // Caso 1: Assignee pode APENAS mudar status para RESOLVED ou IN_PROGRESS (se estiver OPEN)
         if (isAssignee && !isCreator && !isAdmin) {
@@ -335,16 +340,28 @@ export const updateTicket = async (req: AuthenticatedRequest, res: Response) => 
 
         // Caso 2: Não é criador, assignee ou admin
         if (!isCreator && !isAssignee && !isAdmin) {
-            return res.status(403).json({ message: 'Sem permissão para editar este ticket' });
+            // Se for potential assignee e estiver a reclamar o ticket (Status -> IN_PROGRESS), permitimos
+            if (!isClaiming) {
+                return res.status(403).json({ message: 'Sem permissão para editar este ticket' });
+            }
         }
 
-        // Caso 3: Criador ou Admin podem editar tudo
+        // Determine new assignee ID
+        // If claiming, force self-assign. Otherwise use provided assigneeId (if permitted) or undefined
+        let newAssigneeId = undefined;
+        if (isClaiming) {
+            newAssigneeId = userId;
+        } else if (assigneeId) {
+            newAssigneeId = parseInt(assigneeId);
+        }
+
+        // Caso 3: Criador ou Admin podem editar tudo (e claimers só atualizam isso)
         const updatedTicket = await prisma.ticket.update({
             where: { id: parseInt(id) },
             data: {
                 status,
                 priority,
-                assigneeId: assigneeId ? parseInt(assigneeId) : undefined,
+                assigneeId: newAssigneeId,
                 title,
                 description,
                 categoryId: categoryId ? parseInt(categoryId) : undefined,
@@ -355,27 +372,32 @@ export const updateTicket = async (req: AuthenticatedRequest, res: Response) => 
 
         // Log activity
         if (status && status !== ticket.status) {
-            if (status === 'IN_PROGRESS' && ticket.status === 'OPEN' && isAssignee) {
-                await logActivity(req.user.id, ticket.id, 'STATUS_CHANGED', `Ticket visualizado pela primeira vez: Estado alterado para Em Progresso`);
+            if (status === 'IN_PROGRESS' && ticket.status === 'OPEN' && (isAssignee || isClaiming)) {
+                await logActivity(req.user.id, ticket.id, 'STATUS_CHANGED', `Ticket visualizado/reclamado: Estado alterado para Em Progresso`);
             } else {
                 await logActivity(req.user.id, ticket.id, 'STATUS_CHANGED', `Estado alterado para ${status}`);
             }
         }
         if (priority && priority !== ticket.priority) await logActivity(req.user.id, ticket.id, 'PRIORITY_CHANGED', `Prioridade alterada para ${priority}`);
-        if (assigneeId && parseInt(assigneeId) !== ticket.assigneeId) await logActivity(req.user.id, ticket.id, 'ASSIGNEE_CHANGED', `Atribuído a ${updatedTicket.assignee?.name || 'ninguém'}`);
-        if (title && title !== ticket.title) await logActivity(req.user.id, ticket.id, 'TICKET_UPDATED', `Título atualizado`);
 
-        // Check if assignee changed and send email
-        if (assigneeId && updatedTicket.assignee && updatedTicket.assignee.email && parseInt(assigneeId) !== ticket.assigneeId) {
-            sendTicketAssignedEmail(updatedTicket.assignee.email, updatedTicket.id, updatedTicket.title).catch(console.error);
-            createNotification(
-                updatedTicket.assignee.id,
-                'Ticket Atribuído',
-                `Foi-lhe atribuído o ticket #${updatedTicket.id}: ${updatedTicket.title}`,
-                'TICKET_ASSIGNED',
-                `/tickets/${updatedTicket.id}`
-            );
+        // Log assignment change
+        if (updatedTicket.assigneeId && updatedTicket.assigneeId !== ticket.assigneeId) {
+            await logActivity(req.user.id, ticket.id, 'ASSIGNEE_CHANGED', `Atribuído a ${updatedTicket.assignee?.name || 'ninguém'}`);
+
+            // Check if assignee changed and send email
+            if (updatedTicket.assignee && updatedTicket.assignee.email) {
+                sendTicketAssignedEmail(updatedTicket.assignee.email, updatedTicket.id, updatedTicket.title).catch(console.error);
+                createNotification(
+                    updatedTicket.assignee.id,
+                    'Ticket Reclamado/Atribuído',
+                    `Foi-lhe atribuído o ticket #${updatedTicket.id}: ${updatedTicket.title}`,
+                    'TICKET_ASSIGNED',
+                    `/tickets/${updatedTicket.id}`
+                );
+            }
         }
+
+        if (title && title !== ticket.title) await logActivity(req.user.id, ticket.id, 'TICKET_UPDATED', `Título atualizado`);
 
         // Emit socket event
         getIO().emit('ticket:updated', updatedTicket);
