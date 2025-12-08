@@ -114,7 +114,7 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
                     ? `Foi partilhado consigo o ticket ${ticket.ticketNumber}: ${ticket.title}`
                     : `Foi-lhe atribuído o ticket ${ticket.ticketNumber}: ${ticket.title}`;
 
-                sendTicketAssignedEmail(user.email, ticket.id, ticket.title).catch(console.error);
+                sendTicketAssignedEmail(user.email, ticket.ticketNumber, ticket.title).catch(console.error);
                 createNotification(
                     user.id,
                     'Ticket Atribuído',
@@ -276,7 +276,7 @@ export const addComment = async (req: AuthenticatedRequest, res: Response) => {
             createNotification(
                 ticket.creatorId,
                 'Novo Comentário',
-                `Novo comentário no ticket #${id}`,
+                `Novo comentário no ticket ${ticket.ticketNumber}`,
                 'COMMENT_ADDED',
                 `/tickets/${id}`
             );
@@ -286,7 +286,7 @@ export const addComment = async (req: AuthenticatedRequest, res: Response) => {
             createNotification(
                 ticket.assigneeId,
                 'Novo Comentário',
-                `Novo comentário no ticket #${id}`,
+                `Novo comentário no ticket ${ticket.ticketNumber}`,
                 'COMMENT_ADDED',
                 `/tickets/${id}`
             );
@@ -386,11 +386,11 @@ export const updateTicket = async (req: AuthenticatedRequest, res: Response) => 
 
             // Check if assignee changed and send email
             if (updatedTicket.assignee && updatedTicket.assignee.email) {
-                sendTicketAssignedEmail(updatedTicket.assignee.email, updatedTicket.id, updatedTicket.title).catch(console.error);
+                sendTicketAssignedEmail(updatedTicket.assignee.email, updatedTicket.ticketNumber, updatedTicket.title).catch(console.error);
                 createNotification(
                     updatedTicket.assignee.id,
                     'Ticket Reclamado/Atribuído',
-                    `Foi-lhe atribuído o ticket #${updatedTicket.id}: ${updatedTicket.title}`,
+                    `Foi-lhe atribuído o ticket ${updatedTicket.ticketNumber}: ${updatedTicket.title}`,
                     'TICKET_ASSIGNED',
                     `/tickets/${updatedTicket.id}`
                 );
