@@ -114,7 +114,8 @@ export const createTicket = async (req: AuthenticatedRequest, res: Response) => 
                     ? `Foi partilhado consigo o ticket ${ticket.ticketNumber}: ${ticket.title}`
                     : `Foi-lhe atribuído o ticket ${ticket.ticketNumber}: ${ticket.title}`;
 
-                sendTicketAssignedEmail(user.email, ticket.ticketNumber, ticket.title).catch(console.error);
+                const displayId = ticket.ticketNumber || ticket.id;
+                sendTicketAssignedEmail(user.email, displayId, ticket.title).catch(console.error);
                 createNotification(
                     user.id,
                     'Ticket Atribuído',
@@ -387,7 +388,8 @@ export const updateTicket = async (req: AuthenticatedRequest, res: Response) => 
 
             // Check if assignee changed and send email
             if (updatedTicket.assignee && updatedTicket.assignee.email) {
-                sendTicketAssignedEmail(updatedTicket.assignee.email, updatedTicket.ticketNumber, updatedTicket.title).catch(console.error);
+                const displayId = updatedTicket.ticketNumber || updatedTicket.id;
+                sendTicketAssignedEmail(updatedTicket.assignee.email, displayId, updatedTicket.title).catch(console.error);
                 createNotification(
                     updatedTicket.assignee.id,
                     'Ticket Reclamado/Atribuído',

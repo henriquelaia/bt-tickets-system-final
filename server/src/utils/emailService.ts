@@ -23,7 +23,7 @@ const createTransporter = async () => {
     return null;
 };
 
-export const sendTicketCreatedEmail = async (to: string, ticketId: number, title: string) => {
+export const sendTicketCreatedEmail = async (to: string, ticketId: string | number, title: string) => {
     const transporter = await createTransporter();
     if (!transporter) {
         console.log('Email service disabled. Skipping ticket creation email.');
@@ -33,15 +33,15 @@ export const sendTicketCreatedEmail = async (to: string, ticketId: number, title
     const info = await transporter.sendMail({
         from: '"Ticket System" <system@example.com>',
         to,
-        subject: `Novo Ticket Criado: #${ticketId}`,
+        subject: `Novo Ticket Criado: ${ticketId}`,
         text: `Um novo ticket foi criado: ${title}`,
-        html: `<p>Um novo ticket foi criado: <b>${title}</b></p><p>ID: #${ticketId}</p>`
+        html: `<p>Um novo ticket foi criado: <b>${title}</b></p><p>ID: ${ticketId}</p>`
     });
 
     console.log('Message sent: %s', info.messageId);
 };
 
-export const sendTicketAssignedEmail = async (to: string, ticketId: number, title: string) => {
+export const sendTicketAssignedEmail = async (to: string, ticketId: string | number, title: string) => {
     const transporter = await createTransporter();
     if (!transporter) {
         console.log('Email service disabled. Skipping assignment email.');
@@ -51,9 +51,9 @@ export const sendTicketAssignedEmail = async (to: string, ticketId: number, titl
     const info = await transporter.sendMail({
         from: '"Ticket System" <system@example.com>',
         to,
-        subject: `Ticket Atribuído: #${ticketId}`,
-        text: `Foi-lhe atribuído o ticket #${ticketId}: ${title}`,
-        html: `<p>Foi-lhe atribuído o ticket <b>#${ticketId}</b>: ${title}</p>`
+        subject: `Ticket Atribuído: ${ticketId}`,
+        text: `Foi-lhe atribuído o ticket ${ticketId}: ${title}`,
+        html: `<p>Foi-lhe atribuído o ticket <b>${ticketId}</b>: ${title}</p>`
     });
 
     console.log('Message sent: %s', info.messageId);
