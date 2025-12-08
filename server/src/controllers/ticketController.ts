@@ -239,7 +239,8 @@ export const getTicket = async (req: Request, res: Response) => {
                     },
                     orderBy: { createdAt: 'asc' }
                 },
-                attachments: true
+                attachments: true,
+                potentialAssignees: { select: { id: true, name: true } }
             }
         });
         if (!ticket) return res.status(404).json({ message: 'Ticket não encontrado' });
