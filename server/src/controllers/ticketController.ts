@@ -168,7 +168,22 @@ export const getTickets = async (req: AuthenticatedRequest, res: Response) => {
         if (!isAdmin && targetUserId !== userId) {
             return res.status(403).json({ message: 'Sem permissão para ver tickets de outros utilizadores' });
         }
-        where.assigneeId = targetUserId;
+        // Fix: assignedTo must include both explicit assignee AND potential assignees (for unclaimed tickets)
+        // We use AND to combine with the security filter (where.OR) if it exists
+        where.AND = [
+            ...(where.AND || []),
+            {
+                OR: [
+                    { assigneeId: targetUserId },
+                    {
+                        AND: [
+                            { potentialAssignees: { some: { id: targetUserId } } },
+                            { assigneeId: null }
+                        ]
+                    }
+                ]
+            }
+        ];
     }
 
     if (createdBy) {
@@ -224,10 +239,12 @@ export const getTickets = async (req: AuthenticatedRequest, res: Response) => {
     }
 };
 
-export const getTicket = async (req: Request, res: Response) => {
+export const getTicket = async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
+    const userId = req.user.id; // User is guaranteed by authenticateToken
+
     try {
-        const ticket = await prisma.ticket.findUnique({
+        let ticket = await prisma.ticket.findUnique({
             where: { id: parseInt(id) },
             include: {
                 creator: { select: { id: true, name: true } },
@@ -244,9 +261,58 @@ export const getTicket = async (req: Request, res: Response) => {
                 potentialAssignees: { select: { id: true, name: true } }
             }
         });
+
         if (!ticket) return res.status(404).json({ message: 'Ticket não encontrado' });
+
+        // Check if the current user is a potential assignee and the ticket is unassigned
+        const isPotentialAssignee = ticket.potentialAssignees.some(u => u.id === userId);
+        const shouldClaim = isPotentialAssignee && !ticket.assigneeId;
+
+        if (shouldClaim) {
+            // Update ticket: assign to this user and set status to IN_PROGRESS if it was OPEN
+            ticket = await prisma.ticket.update({
+                where: { id: ticket.id },
+                data: {
+                    assigneeId: userId,
+                    status: ticket.status === 'OPEN' ? 'IN_PROGRESS' : undefined,
+                    // We do NOT clear potentialAssignees so we have history, 
+                    // but the simple fact assigneeId is set hides it from others in getTickets
+                },
+                include: {
+                    creator: { select: { id: true, name: true } },
+                    assignee: { select: { id: true, name: true } },
+                    category: true,
+                    comments: {
+                        include: {
+                            user: { select: { id: true, name: true } },
+                            attachments: true
+                        },
+                        orderBy: { createdAt: 'asc' }
+                    },
+                    attachments: true,
+                    potentialAssignees: { select: { id: true, name: true } }
+                }
+            });
+
+            // Log activities
+            await logActivity(userId, ticket.id, 'TICKET_CLAIMED', `Ticket reclamado automaticamente ao visualizar`);
+
+            if (ticket.status === 'IN_PROGRESS') {
+                await logActivity(userId, ticket.id, 'STATUS_CHANGED', `Estado alterado para Em Progresso`);
+            }
+
+            // Notify about the assignment change logic if needed, but since it's "self-claimed" by viewing, 
+            // maybe we don't need to notify the user themselves. 
+            // However, we might want to notify the creator? 
+            // Existing logic in updateTicket notifies assignee, but here we ARE the assignee.
+
+            // Emit socket event for real-time updates (so it disappears from User B's screen immediately if they are online)
+            getIO().emit('ticket:updated', ticket);
+        }
+
         res.json(ticket);
     } catch (error) {
+        console.error('Error loading ticket:', error);
         res.status(500).json({ message: 'Erro ao carregar ticket' });
     }
 };
